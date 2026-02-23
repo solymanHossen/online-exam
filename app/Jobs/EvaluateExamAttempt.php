@@ -20,9 +20,6 @@ class EvaluateExamAttempt implements ShouldQueue
         $this->attempt = $attempt;
     }
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         $attempt = $this->attempt->load(['exam', 'answers.question', 'answers.selectedOption']);
@@ -48,6 +45,16 @@ class EvaluateExamAttempt implements ShouldQueue
                 $answer->update(['is_correct' => false, 'marks_awarded' => -$negativeMarks]);
                 $totalScore -= $negativeMarks;
             }
+
+            // Update Statistics
+            $stat = \App\Models\QuestionStatistic::firstOrCreate(
+                ['question_id' => $question->id],
+                ['times_attempted' => 0, 'times_correct' => 0]
+            );
+            $stat->increment('times_attempted');
+            if ($selectedOption->is_correct) {
+                $stat->increment('times_correct');
+            }
         }
 
         // Prevent negative total scores if required
@@ -58,6 +65,19 @@ class EvaluateExamAttempt implements ShouldQueue
             'is_completed' => true,
         ]);
 
-        // Job can emit an event here to recalculate rankings
+        // Recalculate Exam Rankings
+        $allAttempts = ExamAttempt::where('exam_id', $attempt->exam_id)
+            ->where('is_completed', true)
+            ->orderByDesc('total_score')
+            ->orderBy('end_time') // Faster completion ranks higher if tie
+            ->get();
+
+        $rank = 1;
+        foreach ($allAttempts as $a) {
+            \App\Models\ExamRanking::updateOrCreate(
+                ['exam_id' => $attempt->exam_id, 'user_id' => $a->user_id],
+                ['rank' => $rank++, 'total_score' => $a->total_score]
+            );
+        }
     }
 }

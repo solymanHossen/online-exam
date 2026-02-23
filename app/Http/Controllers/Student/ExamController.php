@@ -33,10 +33,26 @@ class ExamController extends Controller
 
     public function room(Exam $exam): Response
     {
-        $exam->load('questions.question.options');
+        $exam->load([
+            'questions.question.options',
+            'questions.question' => function ($q) {
+                $q->select('id', 'question_text', 'question_image', 'marks', 'negative_marks');
+            }
+        ]);
+
+        $attempt = \App\Models\ExamAttempt::firstOrCreate(
+            ['exam_id' => $exam->id, 'user_id' => auth()->id(), 'is_completed' => false],
+            [
+                'start_time' => now(),
+                'end_time' => now()->addMinutes($exam->duration_minutes),
+            ]
+        );
+
+        $attempt->load('answers');
 
         return Inertia::render('Student/ExamRoom', [
             'exam' => $exam,
+            'attempt' => $attempt,
         ]);
     }
 

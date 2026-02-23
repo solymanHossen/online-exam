@@ -59,7 +59,9 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
     Route::get('exams', [\App\Http\Controllers\Student\ExamController::class, 'index'])->name('exams.index');
     Route::get('exams/{exam}/room', [\App\Http\Controllers\Student\ExamController::class, 'room'])->name('exams.room');
-    Route::post('exams/{exam}/attempt', [\App\Http\Controllers\Student\ExamController::class, 'attempt'])->name('exams.attempt');
+
+    Route::post('attempts/{attempt}/save-answer', [\App\Http\Controllers\Student\AttemptController::class, 'saveAnswer'])->name('attempts.save-answer');
+    Route::post('attempts/{attempt}/submit', [\App\Http\Controllers\Student\AttemptController::class, 'submit'])->name('attempts.submit');
 
     Route::get('payments', [\App\Http\Controllers\Student\PaymentController::class, 'index'])->name('payments.index');
 });
