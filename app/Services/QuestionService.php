@@ -21,9 +21,17 @@ class QuestionService extends BaseService
         return $this->repository->getPaginatedWithSubject($perPage);
     }
 
-    public function createQuestion(array $data): Model
+    public function createQuestion(array $data, array $options): Model
     {
-        return $this->repository->create($data);
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $options) {
+            $question = $this->repository->create($data);
+
+            if (!empty($options)) {
+                $question->options()->createMany($options);
+            }
+
+            return $question;
+        });
     }
 
     public function updateQuestion(Question $question, array $data): bool

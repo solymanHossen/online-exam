@@ -39,7 +39,48 @@ class QuestionController extends Controller
 
     public function store(StoreQuestionRequest $request)
     {
-        $this->questionService->createQuestion($request->validated());
+        $validated = $request->validated();
+
+        $questionData = [
+            'subject_id' => $validated['subject_id'],
+            'chapter_id' => $validated['chapter_id'],
+            'question_text' => $validated['question_text'],
+            'explanation' => $validated['explanation'] ?? null,
+            'difficulty' => $validated['difficulty'],
+            'marks' => $validated['marks'],
+            'negative_marks' => $validated['negative_marks'],
+            'created_by' => auth()->id() ?? 'placeholder_user_id', // Replace with auth()->id() when users exist
+            'is_active' => true,
+        ];
+
+        // Handle Question Image Upload
+        if ($request->hasFile('question_image')) {
+            $path = $request->file('question_image')->store('questions', 'public');
+            $questionData['question_image'] = $path;
+        }
+
+        $optionsData = [];
+        if (isset($validated['options']) && is_array($validated['options'])) {
+            // Need to retrieve literal files from the request to pass to storage since validated() 
+            // array mapping for nested files can sometimes drop the UploadedFile instance
+            $rawOptions = $request->file('options');
+
+            foreach ($validated['options'] as $index => $option) {
+                $payload = [
+                    'option_text' => $option['option_text'],
+                    'is_correct' => filter_var($option['is_correct'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ];
+
+                if (isset($rawOptions[$index]['option_image'])) {
+                    $path = $rawOptions[$index]['option_image']->store('options', 'public');
+                    $payload['option_image'] = $path;
+                }
+
+                $optionsData[] = $payload;
+            }
+        }
+
+        $this->questionService->createQuestion($questionData, $optionsData);
 
         return redirect()->route('admin.questions.index')->with('success', 'Question created successfully.');
     }

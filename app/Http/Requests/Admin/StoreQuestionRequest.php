@@ -11,7 +11,7 @@ class StoreQuestionRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,20 @@ class StoreQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'subject_id' => 'required|uuid|exists:subjects,id',
+            'chapter_id' => 'required|uuid|exists:chapters,id',
+            'question_text' => 'required|string',
+            'question_image' => 'nullable|image|max:2048',
+            'explanation' => 'nullable|string',
+            'difficulty' => 'required|string|in:easy,medium,hard',
+            'marks' => 'required|numeric|min:0',
+            'negative_marks' => 'required|numeric|min:0',
+
+            // Options validation
+            'options' => 'required|array|min:2',
+            'options.*.option_text' => 'required|string',
+            'options.*.option_image' => 'nullable|image|max:2048',
+            'options.*.is_correct' => 'boolean',
         ];
     }
 }
