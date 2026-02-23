@@ -16,8 +16,31 @@ services:
     networks:
       - online_exam_network
 
+  redis:
+    image: redis:alpine
+    container_name: online_exam_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - online_exam_redis_data:/data
+    networks:
+      - online_exam_network
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: online_exam_mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - online_exam_network
+
 volumes:
   online_exam_pg_data:
+  online_exam_redis_data:
+
 
 networks:
   online_exam_network:
