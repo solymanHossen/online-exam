@@ -4,15 +4,26 @@ namespace App\Services;
 
 use App\Models\Student;
 use App\Models\User;
+use App\Repositories\StudentRepository;
+use App\Repositories\UserRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class StudentService extends BaseService
 {
+    protected StudentRepository $studentRepository;
+    protected UserRepository $userRepository;
+
+    public function __construct(StudentRepository $studentRepository, UserRepository $userRepository)
+    {
+        $this->studentRepository = $studentRepository;
+        $this->userRepository = $userRepository;
+    }
+
     public function getPaginatedStudents(int $perPage = 10): LengthAwarePaginator
     {
-        return Student::with(['user', 'batch'])->paginate($perPage);
+        return $this->studentRepository->getPaginatedWithUserAndBatch($perPage);
     }
 
     /**
@@ -23,11 +34,11 @@ class StudentService extends BaseService
         return DB::transaction(function () use ($userData, $studentData) {
             $userData['password'] = Hash::make($userData['password']);
 
-            $user = User::create($userData);
+            $user = $this->userRepository->create($userData);
 
             $studentData['user_id'] = $user->id;
 
-            return Student::create($studentData);
+            return $this->studentRepository->create($studentData);
         });
     }
 }

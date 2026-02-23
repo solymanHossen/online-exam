@@ -3,63 +3,58 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreQuestionRequest;
+use App\Http\Requests\Admin\UpdateQuestionRequest;
+use App\Models\Question;
+use App\Services\QuestionService;
+use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class QuestionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use ResponseTrait;
+
+    protected QuestionService $questionService;
+
+    public function __construct(QuestionService $questionService)
     {
-        //
+        $this->questionService = $questionService;
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(): Response
     {
-        //
+        $questions = $this->questionService->getPaginatedQuestions(15);
+
+        return Inertia::render('Admin/Questions/Index', [
+            'questions' => clone $questions,
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function create(): Response
     {
-        //
+        return Inertia::render('Admin/Questions/Form');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreQuestionRequest $request)
     {
-        //
+        $this->questionService->createQuestion($request->validated());
+
+        return redirect()->route('admin.questions.index')->with('success', 'Question created successfully.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(UpdateQuestionRequest $request, Question $question)
     {
-        //
+        $this->questionService->updateQuestion($question, $request->validated());
+
+        return redirect()->route('admin.questions.index')->with('success', 'Question updated successfully.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Question $question)
     {
-        //
-    }
+        $this->questionService->deleteQuestion($question);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.questions.index')->with('success', 'Question deleted successfully.');
     }
 }
