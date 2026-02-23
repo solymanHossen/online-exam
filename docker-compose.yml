@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: online_exam_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-online_exam}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - online_exam_pg_data:/var/lib/postgresql/data
+    networks:
+      - online_exam_network
+
+volumes:
+  online_exam_pg_data:
+
+networks:
+  online_exam_network:
+    driver: bridge
