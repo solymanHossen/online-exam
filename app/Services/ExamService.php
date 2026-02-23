@@ -3,17 +3,35 @@
 namespace App\Services;
 
 use App\Models\Exam;
+use App\Repositories\ExamRepository;
 use Illuminate\Support\Facades\DB;
 use Exception;
 
 class ExamService extends BaseService
 {
+    protected ExamRepository $examRepository;
+
+    public function __construct(ExamRepository $examRepository)
+    {
+        $this->examRepository = $examRepository;
+    }
+
     /**
      * Create formally an Exam record.
      */
+    public function getPaginatedExams(int $perPage = 10)
+    {
+        return $this->examRepository->getPaginatedWithRelations($perPage);
+    }
+
     public function createExam(array $data): Exam
     {
-        return Exam::create($data);
+        return $this->examRepository->create($data);
+    }
+
+    public function updateExam(Exam $exam, array $data): bool
+    {
+        return $this->examRepository->update($exam, $data);
     }
 
     /**

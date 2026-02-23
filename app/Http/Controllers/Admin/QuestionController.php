@@ -3,63 +3,99 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreQuestionRequest;
+use App\Http\Requests\Admin\UpdateQuestionRequest;
+use App\Models\Question;
+use App\Services\QuestionService;
+use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
 
 class QuestionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    use ResponseTrait;
+
+    protected QuestionService $questionService;
+
+    public function __construct(QuestionService $questionService)
     {
-        //
+        $this->questionService = $questionService;
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function index(): Response
     {
-        //
+        $questions = $this->questionService->getPaginatedQuestions(15);
+
+        return Inertia::render('Admin/Questions/Index', [
+            'questions' => clone $questions,
+        ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function create(): Response
     {
-        //
+        return Inertia::render('Admin/Questions/Form');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(StoreQuestionRequest $request)
     {
-        //
+        $validated = $request->validated();
+
+        $questionData = [
+            'subject_id' => $validated['subject_id'],
+            'chapter_id' => $validated['chapter_id'],
+            'question_text' => $validated['question_text'],
+            'explanation' => $validated['explanation'] ?? null,
+            'difficulty' => $validated['difficulty'],
+            'marks' => $validated['marks'],
+            'negative_marks' => $validated['negative_marks'],
+            'created_by' => auth()->id() ?? 'placeholder_user_id', // Replace with auth()->id() when users exist
+            'is_active' => true,
+        ];
+
+        // Handle Question Image Upload
+        if ($request->hasFile('question_image')) {
+            $path = $request->file('question_image')->store('questions', 'public');
+            $questionData['question_image'] = $path;
+        }
+
+        $optionsData = [];
+        if (isset($validated['options']) && is_array($validated['options'])) {
+            // Need to retrieve literal files from the request to pass to storage since validated() 
+            // array mapping for nested files can sometimes drop the UploadedFile instance
+            $rawOptions = $request->file('options');
+
+            foreach ($validated['options'] as $index => $option) {
+                $payload = [
+                    'option_text' => $option['option_text'],
+                    'is_correct' => filter_var($option['is_correct'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                ];
+
+                if (isset($rawOptions[$index]['option_image'])) {
+                    $path = $rawOptions[$index]['option_image']->store('options', 'public');
+                    $payload['option_image'] = $path;
+                }
+
+                $optionsData[] = $payload;
+            }
+        }
+
+        $this->questionService->createQuestion($questionData, $optionsData);
+
+        return redirect()->route('admin.questions.index')->with('success', 'Question created successfully.');
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function update(UpdateQuestionRequest $request, Question $question)
     {
-        //
+        $this->questionService->updateQuestion($question, $request->validated());
+
+        return redirect()->route('admin.questions.index')->with('success', 'Question updated successfully.');
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function destroy(Question $question)
     {
-        //
-    }
+        $this->questionService->deleteQuestion($question);
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
+        return redirect()->route('admin.questions.index')->with('success', 'Question deleted successfully.');
     }
 }
