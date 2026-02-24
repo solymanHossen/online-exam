@@ -29,7 +29,8 @@ class UserFactory extends Factory
             'role_id' => Role::factory(),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->unique()->phoneNumber(),
+            'email_verified_at' => now(),
+            'phone' => fake()->numerify('+88019########'),
             'password' => static::$password ??= Hash::make('password'),
             'avatar' => null,
             'is_active' => true,
@@ -56,6 +57,16 @@ class UserFactory extends Factory
     {
         return $this->state(fn(array $attributes) => [
             'role_id' => Role::where('name', 'Student')->first() ?? Role::factory()->student(),
+        ]);
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn(array $attributes) => [
+            'email_verified_at' => null,
         ]);
     }
 }

@@ -11,7 +11,7 @@ class StoreChapterRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,10 @@ class StoreChapterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'subject_id' => 'required|exists:subjects,id',
+            'name' => 'required|string|max:200',
+            'order' => 'required|integer|min:1',
+            'description' => 'nullable|string'
         ];
     }
 }

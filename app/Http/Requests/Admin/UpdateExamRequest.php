@@ -11,7 +11,7 @@ class UpdateExamRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,14 @@ class UpdateExamRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'title' => 'sometimes|required|string|max:255',
+            'batch_id' => 'sometimes|required|exists:batches,id',
+            'total_marks' => 'sometimes|required|integer|min:0',
+            'duration_minutes' => 'sometimes|required|integer|min:1',
+            'pass_marks' => 'sometimes|required|integer|min:0|lte:total_marks',
+            'status' => 'sometimes|required|string|in:draft,published,archived',
+            'start_time' => 'sometimes|required|date',
+            'end_time' => 'sometimes|required|date|after:start_time',
         ];
     }
 }

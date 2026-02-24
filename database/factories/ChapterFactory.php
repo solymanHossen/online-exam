@@ -20,6 +20,8 @@ class ChapterFactory extends Factory
         return [
             'subject_id' => Subject::factory(),
             'name' => 'Chapter ' . $this->faker->numberBetween(1, 20) . ': ' . $this->faker->catchPhrase(),
+            'order' => $this->faker->numberBetween(1, 100),
+            'description' => $this->faker->optional()->paragraph(),
         ];
     }
 }

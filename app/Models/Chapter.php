@@ -12,7 +12,7 @@ class Chapter extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $fillable = ['subject_id', 'name'];
+    protected $fillable = ['subject_id', 'name', 'order', 'description'];
 
     public function subject(): BelongsTo
     {

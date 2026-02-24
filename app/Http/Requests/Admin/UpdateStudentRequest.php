@@ -11,7 +11,7 @@ class UpdateStudentRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -21,8 +21,13 @@ class UpdateStudentRequest extends FormRequest
      */
     public function rules(): array
     {
+        $studentId = $this->route('student') ? $this->route('student')->id : null;
+
         return [
-            //
+            'batch_id' => 'sometimes|required|exists:batches,id',
+            'roll_number' => 'sometimes|required|string|max:50|unique:students,roll_number,' . $studentId,
+            'admission_date' => 'sometimes|required|date',
+            'status' => 'sometimes|required|string|in:active,inactive,graduated,suspended',
         ];
     }
 }

@@ -36,16 +36,21 @@ class StudentController extends Controller
     {
         $data = $request->validated();
 
+        // Handle case-insensitivity depending on DB driver (SQLite/Postgres/MySQL)
+        $roleId = \App\Models\Role::whereRaw('LOWER(name) = ?', ['student'])->first()->id ?? null;
+
         $userData = [
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => $data['password'],
+            'role_id' => $roleId,
         ];
 
         $studentData = [
             'batch_id' => $data['batch_id'],
             'roll_number' => $data['roll_number'],
-            'is_active' => $data['is_active'] ?? true,
+            'admission_date' => $data['admission_date'],
+            'status' => $data['status'] ?? 'active',
         ];
 
         $this->studentService->registerStudent($userData, $studentData);
