@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Subject;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +18,8 @@ class ChapterFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'subject_id' => Subject::factory(),
+            'name' => 'Chapter ' . $this->faker->numberBetween(1, 20) . ': ' . $this->faker->catchPhrase(),
         ];
     }
 }

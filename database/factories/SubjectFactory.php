@@ -16,8 +16,12 @@ class SubjectFactory extends Factory
      */
     public function definition(): array
     {
+        $subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'Computer Science', 'English', 'History'];
+        $subject = $this->faker->randomElement($subjects);
+
         return [
-            //
+            'name' => $subject . ' ' . $this->faker->numberBetween(101, 499),
+            'code' => strtoupper(substr($subject, 0, 3)) . $this->faker->numberBetween(100, 999),
         ];
     }
 }

@@ -17,7 +17,9 @@ class BatchFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'name' => 'Batch ' . $this->faker->unique()->numberBetween(1, 100),
+            'class_level' => $this->faker->randomElement(['9', '10', '11', '12']),
+            'year' => $this->faker->year(),
         ];
     }
 }
