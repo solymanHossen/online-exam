@@ -1,60 +1,34 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🎓 Online Exam Platform - Enterprise Examination System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Welcome to the **Online Exam Platform**! This is a state-of-the-art, robust, and highly scalable examination and quiz management system built for educational institutions and businesses.
 
-## About Laravel
+## 🚀 Tech Stack
+This project is engineered using the most modern and powerful web technologies:
+- **Backend:** Laravel 12 (PHP 8.2+)
+- **Frontend:** React.js, Inertia.js (Single Page Application)
+- **UI Framework:** Tailwind CSS & Shadcn UI
+- **Database:** MySQL / MariaDB
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📖 Documentation & Installation
+If you have purchased this item from Envato CodeCanyon, please **DO NOT** try to install it manually using terminal commands if you are not a developer. 
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+We have provided a comprehensive GUI Web Installer and a detailed Documentation file.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+👉 **Please open the `Documentation` folder included in your downloaded `.zip` file and open the `index.html` file to read the step-by-step installation guide.**
 
-## Learning Laravel
+## ✨ Key Features
+- ⚡ **Blazing Fast SPA:** No page reloads, providing a smooth app-like experience.
+- 🔒 **Highly Secure:** Advanced protection against race-conditions, IDOR, and XSS.
+- 💳 **Integrated Payments:** Built-in support for Stripe and PayPal gateways.
+- 🌍 **Multi-Language:** Fully translatable architecture for global audiences.
+- ⚙️ **GUI Installer:** 100% browser-based installation wizard.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🛡️ Security Vulnerabilities
+If you discover a security vulnerability within this project, please send an e-mail to our support team directly via our Envato Profile page. All security vulnerabilities will be promptly addressed.
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## 📄 License
+This project is a premium product available exclusively on Envato CodeCanyon. 
+Unauthorized distribution, sharing, or resale is strictly prohibited.
 
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# online-exam
+---
+*Thank you for choosing our product!*
