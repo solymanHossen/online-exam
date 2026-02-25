@@ -3,9 +3,10 @@
 namespace App\Repositories;
 
 use App\Models\Exam;
+use App\Repositories\Interfaces\ExamRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ExamRepository extends BaseRepository
+class ExamRepository extends BaseRepository implements ExamRepositoryInterface
 {
     public function __construct(Exam $model)
     {
@@ -27,14 +28,14 @@ class ExamRepository extends BaseRepository
                 // Eager load the intermediate table and options, selecting only necessary fields
                 $query->with([
                     'question' => function ($q) {
-                        $q->select('id', 'question_text', 'question_image', 'marks', 'negative_marks')
-                            ->with([
-                                'options' => function ($optQuery) {
-                                    // Prevent leaking 'is_correct' to the frontend payload
-                                    $optQuery->select('id', 'question_id', 'option_text', 'option_image');
-                                },
-                            ]);
-                    },
+                    $q->select('id', 'question_text', 'question_image', 'marks', 'negative_marks')
+                        ->with([
+                            'options' => function ($optQuery) {
+                                // Prevent leaking 'is_correct' to the frontend payload
+                                $optQuery->select('id', 'question_id', 'option_text', 'option_image');
+                            },
+                        ]);
+                },
                 ]);
             },
         ])->findOrFail($examId);

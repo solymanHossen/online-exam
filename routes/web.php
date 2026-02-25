@@ -122,7 +122,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     Route::controller(StudentPaymentController::class)->prefix('payments')->name('payments.')->group(function () {
         Route::get('/', 'index')->name('index');
-        Route::post('/checkout', 'initiateCheckout')->name('checkout');
+        Route::post('/checkout', 'initiateCheckout')->middleware('throttle:5,1')->name('checkout');
         Route::get('/callback', 'callback')->name('callback');
     });
 });
@@ -131,4 +131,4 @@ Route::post('webhooks/payments/{gateway}', [StudentPaymentController::class, 'we
 
 Route::post('/locale', [LocalizationController::class, 'update'])->name('locale.update');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

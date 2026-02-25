@@ -4,15 +4,15 @@ namespace App\Services;
 
 use App\Models\Exam;
 use App\Models\Question;
-use App\Repositories\ExamRepository;
+use App\Repositories\Interfaces\ExamRepositoryInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ExamService extends BaseService
 {
-    protected ExamRepository $examRepository;
+    protected ExamRepositoryInterface $examRepository;
 
-    public function __construct(ExamRepository $examRepository)
+    public function __construct(ExamRepositoryInterface $examRepository)
     {
         $this->examRepository = $examRepository;
     }
