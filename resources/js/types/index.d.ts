@@ -41,4 +41,6 @@ export type PageProps<
     auth: {
         user: User;
     };
+    locale: string;
+    translations: Record<string, string>;
 };

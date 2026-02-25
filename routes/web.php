@@ -92,4 +92,6 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
 Route::post('webhooks/payments/{gateway}', [\App\Http\Controllers\Student\PaymentController::class, 'webhook'])->name('webhooks.payments');
 
+Route::post('/locale', [\App\Http\Controllers\LocalizationController::class, 'update'])->name('locale.update');
+
 require __DIR__ . '/auth.php';
