@@ -18,6 +18,7 @@ class Payment extends Model
         'currency',
         'status',
         'transaction_id',
+        'gateway_name',
         'type',
         'description'
     ];

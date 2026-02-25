@@ -16,4 +16,9 @@ class PaymentRepository extends BaseRepository
     {
         return $this->model->with('user')->latest()->paginate($perPage);
     }
+
+    public function findByTransactionId(string $transactionId): ?Payment
+    {
+        return $this->model->where('transaction_id', $transactionId)->first();
+    }
 }

@@ -86,6 +86,10 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
     Route::post('attempts/{attempt}/submit', [\App\Http\Controllers\Student\AttemptController::class, 'submit'])->name('attempts.submit');
 
     Route::get('payments', [\App\Http\Controllers\Student\PaymentController::class, 'index'])->name('payments.index');
+    Route::post('payments/checkout', [\App\Http\Controllers\Student\PaymentController::class, 'initiateCheckout'])->name('payments.checkout');
+    Route::get('payments/callback', [\App\Http\Controllers\Student\PaymentController::class, 'callback'])->name('payments.callback');
 });
+
+Route::post('webhooks/payments/{gateway}', [\App\Http\Controllers\Student\PaymentController::class, 'webhook'])->name('webhooks.payments');
 
 require __DIR__ . '/auth.php';
