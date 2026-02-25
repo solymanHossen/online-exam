@@ -71,7 +71,18 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
     Route::resource('exams', \App\Http\Controllers\Admin\ExamController::class);
     Route::resource('students', \App\Http\Controllers\Admin\StudentController::class);
     Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class)->only(['index', 'show']);
+
+    // System Utilities (cPanel / Shared Hosting Support)
+    Route::prefix('system-utilities')->name('system-utilities.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'index'])->name('index');
+        Route::post('/link-storage', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'linkStorage'])->name('link-storage');
+        Route::post('/clear-caches', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'clearCaches'])->name('clear-caches');
+        Route::post('/update-env', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'updateEnvSettings'])->name('update-env');
+    });
 });
+
+// Dedicated Public/Cron Route for Queue Processing (Secured via token or run locally via cPanel cron)
+Route::get('/cron/process-queue', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'processQueue'])->name('cron.process-queue');
 
 /**
  * ==========================================================
