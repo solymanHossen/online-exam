@@ -16,6 +16,28 @@ use Inertia\Inertia;
 |
 */
 
+/**
+ * ==========================================================
+ * INSTALLER ROUTES
+ * ==========================================================
+ */
+Route::prefix('install')->name('install.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\InstallController::class, 'welcome'])->name('welcome');
+    Route::get('/requirements', [\App\Http\Controllers\InstallController::class, 'requirements'])->name('requirements');
+    Route::get('/permissions', [\App\Http\Controllers\InstallController::class, 'permissions'])->name('permissions');
+
+    Route::get('/database', [\App\Http\Controllers\InstallController::class, 'database'])->name('database');
+    Route::post('/database', [\App\Http\Controllers\InstallController::class, 'processDatabase'])->name('database.process');
+
+    Route::get('/migrations', [\App\Http\Controllers\InstallController::class, 'migrations'])->name('migrations');
+    Route::post('/migrations', [\App\Http\Controllers\InstallController::class, 'runMigrations'])->name('migrations.run');
+
+    Route::get('/admin', [\App\Http\Controllers\InstallController::class, 'admin'])->name('admin');
+    Route::post('/admin', [\App\Http\Controllers\InstallController::class, 'processAdmin'])->name('admin.process');
+
+    Route::get('/complete', [\App\Http\Controllers\InstallController::class, 'complete'])->name('complete');
+});
+
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
