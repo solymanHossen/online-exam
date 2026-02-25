@@ -20,7 +20,7 @@ class StudentFactory extends Factory
     {
         return [
             'user_id' => User::factory()->student(),
-            'roll_number' => 'ROLL-' . $this->faker->unique()->numberBetween(10000, 99999),
+            'roll_number' => 'ROLL-'.$this->faker->unique()->numberBetween(10000, 99999),
             'guardian_name' => $this->faker->name(),
             'guardian_phone' => $this->faker->phoneNumber(),
             'batch_id' => Batch::factory(),

@@ -30,7 +30,7 @@ class ExamAttemptFactory extends Factory
 
     public function completed(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'is_completed' => true,
             'end_time' => now()->subMinutes($this->faker->numberBetween(1, 10)),
             'total_score' => $this->faker->numberBetween(10, 100),

@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Student extends Model
@@ -19,7 +18,7 @@ class Student extends Model
         'guardian_phone',
         'batch_id',
         'admission_date',
-        'status'
+        'status',
     ];
 
     public function user(): BelongsTo

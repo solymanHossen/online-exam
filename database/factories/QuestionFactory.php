@@ -22,7 +22,7 @@ class QuestionFactory extends Factory
         return [
             'subject_id' => Subject::factory(),
             'chapter_id' => Chapter::factory(),
-            'question_text' => $this->faker->paragraph(2) . '?',
+            'question_text' => $this->faker->paragraph(2).'?',
             'question_image' => null,
             'explanation' => $this->faker->paragraph(),
             'difficulty' => $this->faker->randomElement(['easy', 'medium', 'hard']),

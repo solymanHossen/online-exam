@@ -79,7 +79,7 @@ class QuestionController extends Controller
 
         $optionsData = [];
         if (isset($validated['options']) && is_array($validated['options'])) {
-            // Need to retrieve literal files from the request to pass to storage since validated() 
+            // Need to retrieve literal files from the request to pass to storage since validated()
             // array mapping for nested files can sometimes drop the UploadedFile instance
             $rawOptions = $request->file('options');
 

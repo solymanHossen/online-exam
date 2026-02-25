@@ -9,7 +9,6 @@ use App\Http\Resources\SubjectResource;
 use App\Models\Subject;
 use App\Services\SubjectService;
 use App\Traits\ResponseTrait;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

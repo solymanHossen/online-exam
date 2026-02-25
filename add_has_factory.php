@@ -1,4 +1,5 @@
 <?php
+
 $models = [
     'Role.php',
     'Batch.php',
@@ -10,11 +11,11 @@ $models = [
     'QuestionOption.php',
     'Payment.php',
     'ExamAttempt.php',
-    'StudentAnswer.php'
+    'StudentAnswer.php',
 ];
 
 foreach ($models as $model) {
-    $path = __DIR__ . '/app/Models/' . $model;
+    $path = __DIR__.'/app/Models/'.$model;
     if (file_exists($path)) {
         $content = file_get_contents($path);
 
@@ -25,8 +26,8 @@ foreach ($models as $model) {
                 $content
             );
             $content = str_replace(
-                "use HasUuids;",
-                "use HasFactory, HasUuids;",
+                'use HasUuids;',
+                'use HasFactory, HasUuids;',
                 $content
             );
             file_put_contents($path, $content);

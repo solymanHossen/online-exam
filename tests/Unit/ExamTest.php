@@ -2,15 +2,15 @@
 
 namespace Tests\Unit;
 
-use Tests\TestCase;
-use App\Models\Exam;
-use App\Models\Batch;
-use App\Models\User;
-use App\Models\Question;
-use App\Models\ExamQuestion;
 use App\Enums\ExamStatus;
+use App\Models\Batch;
+use App\Models\Exam;
+use App\Models\ExamQuestion;
+use App\Models\Question;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\TestCase;
 
 class ExamTest extends TestCase
 {
@@ -47,7 +47,7 @@ class ExamTest extends TestCase
             'negative_enabled' => true,
             'batch_id' => $batch->id,
             'created_by' => $user->id,
-            'status' => 'draft'
+            'status' => 'draft',
         ]);
 
         $this->assertInstanceOf(Exam::class, $exam);

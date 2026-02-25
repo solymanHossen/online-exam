@@ -13,7 +13,9 @@ class ChapterControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
+
     private Subject $subject;
 
     protected function setUp(): void
@@ -73,7 +75,7 @@ class ChapterControllerTest extends TestCase
         $response->assertInvalid([
             'subject_id',
             'name',
-            'order'
+            'order',
         ]);
     }
 
@@ -154,7 +156,7 @@ class ChapterControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('chapters', [
-            'id' => $chapter->id
+            'id' => $chapter->id,
         ]);
     }
 }

@@ -8,7 +8,6 @@ use App\Http\Requests\Admin\UpdateExamRequest;
 use App\Models\Exam;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

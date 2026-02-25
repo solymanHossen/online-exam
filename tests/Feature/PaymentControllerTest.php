@@ -13,6 +13,7 @@ class PaymentControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
 
     protected function setUp(): void
@@ -73,7 +74,7 @@ class PaymentControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.payments.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Payments/Index')
                 ->has('payments.data', 5)
         );
@@ -86,11 +87,11 @@ class PaymentControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.payments.show', $payment->id));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Payments/Show')
                 ->has(
                     'payment.data',
-                    fn($assert) => $assert
+                    fn ($assert) => $assert
                         ->where('id', $payment->id) // Verifying API Resource structural payload mapping
                         ->etc()
                 )

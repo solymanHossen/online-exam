@@ -25,7 +25,7 @@ class UpdateSubjectRequest extends FormRequest
 
         return [
             'name' => 'required|string|max:150',
-            'code' => 'required|string|max:50|unique:subjects,code,' . $subjectId,
+            'code' => 'required|string|max:50|unique:subjects,code,'.$subjectId,
         ];
     }
 }

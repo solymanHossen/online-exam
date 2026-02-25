@@ -13,6 +13,7 @@ class SubjectControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
 
     protected function setUp(): void
@@ -83,7 +84,7 @@ class SubjectControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.subjects.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Subjects/Index')
                 ->has('subjects.data', 5)
         );
@@ -100,7 +101,7 @@ class SubjectControllerTest extends TestCase
 
         $response->assertInvalid([
             'name',
-            'code'
+            'code',
         ]);
     }
 
@@ -118,7 +119,7 @@ class SubjectControllerTest extends TestCase
     public function test_store_requires_unique_code()
     {
         $existingSubject = Subject::factory()->create([
-            'code' => 'MATH101'
+            'code' => 'MATH101',
         ]);
 
         $payload = [
@@ -133,7 +134,7 @@ class SubjectControllerTest extends TestCase
     public function test_update_ignores_unique_code_validation_for_itself()
     {
         $subject = Subject::factory()->create([
-            'code' => 'PHY101'
+            'code' => 'PHY101',
         ]);
 
         $payload = [
@@ -149,7 +150,7 @@ class SubjectControllerTest extends TestCase
         $this->assertDatabaseHas('subjects', [
             'id' => $subject->id,
             'name' => 'Physics 101 Updated',
-            'code' => 'PHY101'
+            'code' => 'PHY101',
         ]);
     }
 
@@ -213,7 +214,7 @@ class SubjectControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('subjects', [
-            'id' => $subject->id
+            'id' => $subject->id,
         ]);
     }
 }

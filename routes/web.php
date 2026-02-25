@@ -1,29 +1,26 @@
 <?php
 
-use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-
-// General Controllers
-use App\Http\Controllers\InstallController;
-use App\Http\Controllers\LocalizationController;
-use App\Http\Controllers\ProfileController;
-
-// Admin Controllers
 use App\Http\Controllers\Admin\BatchController;
 use App\Http\Controllers\Admin\ChapterController;
 use App\Http\Controllers\Admin\ExamController as AdminExamController;
+// General Controllers
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\QuestionController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
+// Admin Controllers
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\SystemUtilityController;
 use App\Http\Controllers\Admin\UserController;
-
-// Student Controllers
+use App\Http\Controllers\InstallController;
+use App\Http\Controllers\LocalizationController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Student\AttemptController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
+// Student Controllers
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 /*
 |--------------------------------------------------------------------------
@@ -134,4 +131,4 @@ Route::post('webhooks/payments/{gateway}', [StudentPaymentController::class, 'we
 
 Route::post('/locale', [LocalizationController::class, 'update'])->name('locale.update');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

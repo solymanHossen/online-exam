@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
-use App\Models\Role;
+use Inertia\Inertia;
 
 class InstallController extends Controller
 {
@@ -39,7 +39,7 @@ class InstallController extends Controller
             'cURL' => extension_loaded('curl'),
         ];
 
-        $allPassed = !in_array(false, array_values($requirements), true);
+        $allPassed = ! in_array(false, array_values($requirements), true);
 
         return Inertia::render('Install/Requirements', [
             'requirements' => $requirements,
@@ -60,7 +60,7 @@ class InstallController extends Controller
             '.env' => is_writable(base_path('.env')),
         ];
 
-        $allPassed = !in_array(false, array_values($permissions), true);
+        $allPassed = ! in_array(false, array_values($permissions), true);
 
         return Inertia::render('Install/Permissions', [
             'permissions' => $permissions,
@@ -113,7 +113,7 @@ class InstallController extends Controller
             return redirect()->route('install.migrations');
 
         } catch (\Exception $e) {
-            return back()->withErrors(['connection' => 'Could not connect to the database. Please check your configuration. Error: ' . $e->getMessage()]);
+            return back()->withErrors(['connection' => 'Could not connect to the database. Please check your configuration. Error: '.$e->getMessage()]);
         }
     }
 
@@ -133,9 +133,10 @@ class InstallController extends Controller
         try {
             Artisan::call('migrate:fresh', ['--force' => true]);
             Artisan::call('db:seed', ['--force' => true]);
+
             return redirect()->route('install.admin');
         } catch (\Exception $e) {
-            return back()->withErrors(['migration' => 'Failed to migrate database: ' . $e->getMessage()]);
+            return back()->withErrors(['migration' => 'Failed to migrate database: '.$e->getMessage()]);
         }
     }
 
@@ -176,12 +177,12 @@ class InstallController extends Controller
             ]);
 
             // Create Installed file
-            file_put_contents(storage_path('installed'), 'installed at ' . date('Y-m-d H:i:s'));
+            file_put_contents(storage_path('installed'), 'installed at '.date('Y-m-d H:i:s'));
 
             return redirect()->route('install.complete');
 
         } catch (\Exception $e) {
-            return back()->withErrors(['admin' => 'Failed to create admin: ' . $e->getMessage()]);
+            return back()->withErrors(['admin' => 'Failed to create admin: '.$e->getMessage()]);
         }
     }
 
@@ -200,7 +201,7 @@ class InstallController extends Controller
     {
         $path = base_path('.env');
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             File::copy(base_path('.env.example'), $path);
         }
 

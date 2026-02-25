@@ -3,7 +3,11 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ExamAttemptResource;
+use App\Http\Resources\ExamResource;
 use App\Models\Exam;
+use App\Models\ExamAttempt;
+use App\Repositories\ExamRepository;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
@@ -11,16 +15,12 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
-use App\Http\Resources\ExamResource;
-use App\Http\Resources\ExamAttemptResource;
-use App\Repositories\ExamRepository;
-use App\Models\ExamAttempt;
-
 class ExamController extends Controller
 {
     use ResponseTrait;
 
     protected ExamService $examService;
+
     protected ExamRepository $examRepository;
 
     public function __construct(ExamService $examService, ExamRepository $examRepository)

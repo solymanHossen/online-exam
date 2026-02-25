@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\RoleService;
+use App\Services\UserService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use App\Services\UserService;
-use App\Services\RoleService;
 
 class UserController extends Controller
 {
     protected UserService $userService;
+
     protected RoleService $roleService;
 
     public function __construct(UserService $userService, RoleService $roleService)

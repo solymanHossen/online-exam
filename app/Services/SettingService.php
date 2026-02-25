@@ -11,7 +11,7 @@ class SettingService extends BaseService
 
     public function get(string $key, $default = null)
     {
-        $cacheKey = self::REDIS_PREFIX . $key;
+        $cacheKey = self::REDIS_PREFIX.$key;
 
         $cachedValue = Redis::get($cacheKey);
         if ($cachedValue !== null) {
@@ -33,7 +33,7 @@ class SettingService extends BaseService
             ['value' => json_encode($value)]
         );
 
-        $cacheKey = self::REDIS_PREFIX . $key;
+        $cacheKey = self::REDIS_PREFIX.$key;
         Redis::set($cacheKey, json_encode($value));
 
         return $setting;
@@ -42,7 +42,7 @@ class SettingService extends BaseService
     public function delete(string $key): void
     {
         SystemSetting::destroy($key);
-        $cacheKey = self::REDIS_PREFIX . $key;
+        $cacheKey = self::REDIS_PREFIX.$key;
         Redis::del($cacheKey);
     }
 }

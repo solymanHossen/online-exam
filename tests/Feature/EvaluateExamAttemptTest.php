@@ -54,7 +54,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q1',
             'difficulty' => 'easy',
             'marks' => 5,
-            'negative_marks' => 2
+            'negative_marks' => 2,
         ]);
         $q1_opt_correct = QuestionOption::create(['question_id' => $q1->id, 'option_text' => 'Right', 'is_correct' => true]);
         $q1_opt_wrong = QuestionOption::create(['question_id' => $q1->id, 'option_text' => 'Wrong', 'is_correct' => false]);
@@ -67,7 +67,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q2',
             'difficulty' => 'easy',
             'marks' => 4,
-            'negative_marks' => 1
+            'negative_marks' => 1,
         ]);
         $q2_opt_correct = QuestionOption::create(['question_id' => $q2->id, 'option_text' => 'Right', 'is_correct' => true]);
         $q2_opt_wrong = QuestionOption::create(['question_id' => $q2->id, 'option_text' => 'Wrong', 'is_correct' => false]);
@@ -80,7 +80,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q3',
             'difficulty' => 'easy',
             'marks' => 2,
-            'negative_marks' => 0.5
+            'negative_marks' => 0.5,
         ]);
 
         $attempt = ExamAttempt::create([
@@ -96,21 +96,21 @@ class EvaluateExamAttemptTest extends TestCase
         StudentAnswer::create([
             'exam_attempt_id' => $attempt->id,
             'question_id' => $q1->id,
-            'selected_option_id' => $q1_opt_correct->id
+            'selected_option_id' => $q1_opt_correct->id,
         ]);
 
         // Answer Q2 Wrongly
         StudentAnswer::create([
             'exam_attempt_id' => $attempt->id,
             'question_id' => $q2->id,
-            'selected_option_id' => $q2_opt_wrong->id
+            'selected_option_id' => $q2_opt_wrong->id,
         ]);
 
         // Answer Q3 Skipped
         StudentAnswer::create([
             'exam_attempt_id' => $attempt->id,
             'question_id' => $q3->id,
-            'selected_option_id' => null
+            'selected_option_id' => null,
         ]);
 
         // Run the Job
@@ -145,7 +145,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q1',
             'difficulty' => 'easy',
             'marks' => 5,
-            'negative_marks' => 10
+            'negative_marks' => 10,
         ]);
         $q1_opt_wrong = QuestionOption::create(['question_id' => $q1->id, 'option_text' => 'Wrong', 'is_correct' => false]);
 
@@ -161,7 +161,7 @@ class EvaluateExamAttemptTest extends TestCase
         StudentAnswer::create([
             'exam_attempt_id' => $attempt->id,
             'question_id' => $q1->id,
-            'selected_option_id' => $q1_opt_wrong->id
+            'selected_option_id' => $q1_opt_wrong->id,
         ]);
 
         (new EvaluateExamAttempt($attempt))->handle();
@@ -181,7 +181,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q1',
             'difficulty' => 'easy',
             'marks' => 5,
-            'negative_marks' => 2
+            'negative_marks' => 2,
         ]);
         $q1_opt_correct = QuestionOption::create(['question_id' => $q1->id, 'option_text' => 'Right', 'is_correct' => true]);
 
@@ -197,7 +197,7 @@ class EvaluateExamAttemptTest extends TestCase
         StudentAnswer::create([
             'exam_attempt_id' => $attempt->id,
             'question_id' => $q1->id,
-            'selected_option_id' => $q1_opt_correct->id
+            'selected_option_id' => $q1_opt_correct->id,
         ]);
 
         (new EvaluateExamAttempt($attempt))->handle();
@@ -220,7 +220,7 @@ class EvaluateExamAttemptTest extends TestCase
             'question_text' => 'Q1',
             'difficulty' => 'easy',
             'marks' => 10,
-            'negative_marks' => 0
+            'negative_marks' => 0,
         ]);
         $q1_opt_correct = QuestionOption::create(['question_id' => $q1->id, 'option_text' => 'Right', 'is_correct' => true]);
 
@@ -236,7 +236,7 @@ class EvaluateExamAttemptTest extends TestCase
         StudentAnswer::create([
             'exam_attempt_id' => $attempt1->id,
             'question_id' => $q1->id,
-            'selected_option_id' => $q1_opt_correct->id
+            'selected_option_id' => $q1_opt_correct->id,
         ]);
 
         // Attempt 2: Took 40 mins
@@ -251,7 +251,7 @@ class EvaluateExamAttemptTest extends TestCase
         StudentAnswer::create([
             'exam_attempt_id' => $attempt2->id,
             'question_id' => $q1->id,
-            'selected_option_id' => $q1_opt_correct->id
+            'selected_option_id' => $q1_opt_correct->id,
         ]);
 
         (new EvaluateExamAttempt($attempt1))->handle();

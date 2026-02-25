@@ -9,8 +9,6 @@ use App\Models\Chapter;
 use App\Services\ChapterService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class ChapterController extends Controller
 {

@@ -17,11 +17,6 @@ class PayPalGateway implements PaymentGatewayInterface
 
     /**
      * Initiate a charge with PayPal.
-     *
-     * @param float $amount
-     * @param string $currency
-     * @param array $options
-     * @return array
      */
     public function charge(float $amount, string $currency, array $options = []): array
     {
@@ -29,7 +24,7 @@ class PayPalGateway implements PaymentGatewayInterface
 
         // CodeCanyon-ready: Create PayPal order
         // Mocking the response
-        $transactionId = 'PAYID-' . uniqid();
+        $transactionId = 'PAYID-'.uniqid();
 
         return [
             'redirect_url' => $options['return_url'] ?? url('/'), // Mock redirect to PayPal approval URL
@@ -39,10 +34,6 @@ class PayPalGateway implements PaymentGatewayInterface
 
     /**
      * Verify a PayPal payment.
-     *
-     * @param string $transactionId
-     * @param array $options
-     * @return bool
      */
     public function verify(string $transactionId, array $options = []): bool
     {

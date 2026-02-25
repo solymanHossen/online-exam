@@ -14,7 +14,9 @@ class StudentControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $studentUser;
+
     private Batch $batch;
 
     protected function setUp(): void
@@ -90,7 +92,7 @@ class StudentControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.students.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Students/Index')
                 // Using students structure as passed to the view
                 ->has('students.data', 5)
@@ -112,14 +114,14 @@ class StudentControllerTest extends TestCase
             'password',
             'batch_id',
             'roll_number',
-            'admission_date'
+            'admission_date',
         ]);
     }
 
     public function test_store_enforces_unique_email_and_roll_number()
     {
         $existingStudent = Student::factory()->create([
-            'roll_number' => 'R12345'
+            'roll_number' => 'R12345',
         ]);
 
         $invalidPayload = [
@@ -162,7 +164,7 @@ class StudentControllerTest extends TestCase
         // Isolation Verification inside SQLite
         $this->assertDatabaseHas('users', [
             'email' => 'alice@test.com',
-            'name' => 'Alice Freshman'
+            'name' => 'Alice Freshman',
         ]);
 
         $this->assertDatabaseHas('students', [
@@ -210,7 +212,7 @@ class StudentControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('students', [
-            'id' => $student->id
+            'id' => $student->id,
         ]);
     }
 }

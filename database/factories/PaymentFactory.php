@@ -22,7 +22,7 @@ class PaymentFactory extends Factory
             'amount' => $this->faker->randomFloat(2, 10, 500),
             'currency' => 'USD',
             'status' => $this->faker->randomElement(['success', 'pending', 'failed']),
-            'transaction_id' => 'TXN' . strtoupper($this->faker->unique()->bothify('?????#####')),
+            'transaction_id' => 'TXN'.strtoupper($this->faker->unique()->bothify('?????#####')),
             'type' => $this->faker->randomElement(['exam_fee', 'subscription']),
             'description' => $this->faker->sentence(),
         ];
@@ -30,14 +30,14 @@ class PaymentFactory extends Factory
 
     public function paid(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'success',
         ]);
     }
 
     public function pending(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => 'pending',
         ]);
     }

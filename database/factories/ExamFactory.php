@@ -2,9 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ExamStatus;
 use App\Models\Batch;
 use App\Models\User;
-use App\Enums\ExamStatus;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -20,7 +20,7 @@ class ExamFactory extends Factory
     public function definition(): array
     {
         return [
-            'title' => 'Exam: ' . $this->faker->catchPhrase(),
+            'title' => 'Exam: '.$this->faker->catchPhrase(),
             'description' => $this->faker->paragraph(),
             'batch_id' => Batch::factory(),
             'total_marks' => $this->faker->numberBetween(50, 100),
@@ -39,7 +39,7 @@ class ExamFactory extends Factory
 
     public function published(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => ExamStatus::PUBLISHED,
             'start_time' => now()->subDays(1),
             'end_time' => now()->addDays(5),
@@ -48,7 +48,7 @@ class ExamFactory extends Factory
 
     public function draft(): static
     {
-        return $this->state(fn(array $attributes) => [
+        return $this->state(fn (array $attributes) => [
             'status' => ExamStatus::DRAFT,
         ]);
     }

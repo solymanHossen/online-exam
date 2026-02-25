@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Chapter;
 use App\Repositories\ChapterRepository;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ChapterService extends BaseService
 {

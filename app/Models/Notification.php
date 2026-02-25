@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
@@ -16,7 +15,7 @@ class Notification extends Model
         'title',
         'message',
         'type',
-        'read_at'
+        'read_at',
     ];
 
     protected $casts = [

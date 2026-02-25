@@ -25,7 +25,7 @@ class UpdateStudentRequest extends FormRequest
 
         return [
             'batch_id' => 'sometimes|required|exists:batches,id',
-            'roll_number' => 'sometimes|required|string|max:50|unique:students,roll_number,' . $studentId,
+            'roll_number' => 'sometimes|required|string|max:50|unique:students,roll_number,'.$studentId,
             'admission_date' => 'sometimes|required|date',
             'status' => 'sometimes|required|string|in:active,inactive,graduated,suspended',
         ];

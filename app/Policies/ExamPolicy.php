@@ -22,7 +22,7 @@ class ExamPolicy
 
         // Student can only view the exam if they belong to the exam's batch, or if it's available for all (batch_id null)
         $student = Student::where('user_id', $user->id)->first();
-        if (!$student) {
+        if (! $student) {
             return false;
         }
 

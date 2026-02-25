@@ -7,7 +7,6 @@ use App\Models\Question;
 use App\Repositories\ExamRepository;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Exception;
 
 class ExamService extends BaseService
 {
@@ -39,8 +38,7 @@ class ExamService extends BaseService
     /**
      * Attach a specific set of questions to an exam manually.
      *
-     * @param Exam $exam
-     * @param array $questionIds Array of UUIDs of questions
+     * @param  array  $questionIds  Array of UUIDs of questions
      */
     public function attachQuestions(Exam $exam, array $questionIds): void
     {

@@ -12,6 +12,7 @@ class UserControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
 
     protected function setUp(): void
@@ -61,7 +62,7 @@ class UserControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.users.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Users/Index')
                 ->has('users.data') // Verifying pagination payload injected
                 ->has('roles')      // Verifying filter roles are injected

@@ -13,7 +13,7 @@ class LocalizationController extends Controller
     public function update(Request $request)
     {
         $validated = $request->validate([
-            'locale' => ['required', 'string', 'max:5']
+            'locale' => ['required', 'string', 'max:5'],
         ]);
 
         $locale = $validated['locale'];

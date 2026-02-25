@@ -10,8 +10,8 @@ class PaymentGatewayFactory
     /**
      * Resolve the appropriate payment gateway based on the name.
      *
-     * @param string $gatewayName ('stripe', 'paypal')
-     * @return PaymentGatewayInterface
+     * @param  string  $gatewayName  ('stripe', 'paypal')
+     *
      * @throws InvalidArgumentException
      */
     public function make(string $gatewayName): PaymentGatewayInterface

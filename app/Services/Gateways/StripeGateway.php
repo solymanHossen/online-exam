@@ -18,11 +18,6 @@ class StripeGateway implements PaymentGatewayInterface
 
     /**
      * Initiate a charge with Stripe Checkout.
-     *
-     * @param float $amount
-     * @param string $currency
-     * @param array $options
-     * @return array
      */
     public function charge(float $amount, string $currency, array $options = []): array
     {
@@ -31,7 +26,7 @@ class StripeGateway implements PaymentGatewayInterface
         // CodeCanyon-ready: This is where you would call \Stripe\Checkout\Session::create(...)
         // Since we are mocking the actual API call for structural purposes, we return a mock URL.
 
-        $transactionId = 'pi_' . uniqid(); // Mock Stripe PaymentIntent ID
+        $transactionId = 'pi_'.uniqid(); // Mock Stripe PaymentIntent ID
 
         return [
             'redirect_url' => $options['return_url'] ?? url('/'), // Mock redirect to Stripe Checkout URL
@@ -41,10 +36,6 @@ class StripeGateway implements PaymentGatewayInterface
 
     /**
      * Verify a Stripe payment.
-     *
-     * @param string $transactionId
-     * @param array $options
-     * @return bool
      */
     public function verify(string $transactionId, array $options = []): bool
     {

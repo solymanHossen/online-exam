@@ -2,9 +2,9 @@
 
 namespace App\Listeners;
 
+use App\Models\ActivityLog;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Http\Request;
-use App\Models\ActivityLog;
 
 class LogUserActivity
 {

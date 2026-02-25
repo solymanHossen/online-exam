@@ -3,26 +3,26 @@
 namespace App\Actions;
 
 use App\Models\Question;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Exception;
 
 class StoreQuestionAction
 {
     /**
      * Store a question and its options inside a transaction.
      *
-     * @param array $questionData Ensure 'created_by' is included
-     * @param array $optionsData Array of options. Format: [['option_text' => '...', 'is_correct' => true], ...]
-     * @return Question
+     * @param  array  $questionData  Ensure 'created_by' is included
+     * @param  array  $optionsData  Array of options. Format: [['option_text' => '...', 'is_correct' => true], ...]
+     *
      * @throws Exception
      */
     public function execute(array $questionData, array $optionsData): Question
     {
         // Validation: Ensure at least one option is marked as correct
         $hasCorrectOption = collect($optionsData)->containsStrict('is_correct', true);
-        if (!$hasCorrectOption) {
-            throw new Exception("A question must have at least one correct option.");
+        if (! $hasCorrectOption) {
+            throw new Exception('A question must have at least one correct option.');
         }
 
         return DB::transaction(function () use ($questionData, $optionsData) {

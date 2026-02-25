@@ -27,7 +27,7 @@ class QuestionService extends BaseService
         return DB::transaction(function () use ($data, $options) {
             $question = $this->repository->create($data);
 
-            if (!empty($options)) {
+            if (! empty($options)) {
                 $question->options()->createMany($options);
             }
 

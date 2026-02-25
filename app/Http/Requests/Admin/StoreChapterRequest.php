@@ -25,7 +25,7 @@ class StoreChapterRequest extends FormRequest
             'subject_id' => 'required|exists:subjects,id',
             'name' => 'required|string|max:200',
             'order' => 'required|integer|min:1',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
         ];
     }
 }

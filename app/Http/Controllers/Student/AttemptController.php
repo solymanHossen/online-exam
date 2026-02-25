@@ -3,13 +3,12 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateExamAttempt;
 use App\Models\ExamAttempt;
 use App\Models\StudentAnswer;
-use App\Jobs\EvaluateExamAttempt;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 
 class AttemptController extends Controller
 {

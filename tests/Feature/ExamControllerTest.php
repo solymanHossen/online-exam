@@ -15,7 +15,9 @@ class ExamControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
+
     private Batch $batch;
 
     protected function setUp(): void
@@ -90,7 +92,7 @@ class ExamControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.exams.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Exams/Index')
                 ->has('exams.data', 5)
         );
@@ -101,7 +103,7 @@ class ExamControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.exams.create'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Exams/Builder')
         );
     }
@@ -232,7 +234,7 @@ class ExamControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('exams', [
-            'id' => $exam->id
+            'id' => $exam->id,
         ]);
     }
 }

@@ -56,7 +56,7 @@ class AttemptControllerTest extends TestCase
         $attempt->refresh();
         $this->assertTrue($attempt->is_completed);
 
-        Queue::assertPushed(EvaluateExamAttempt::class, function ($job) use ($attempt) {
+        Queue::assertPushed(EvaluateExamAttempt::class, function ($job) {
             // Can't directly access protected $attempt easily, but relying on class pushed
             return true;
         });

@@ -24,7 +24,7 @@ class UpdateChapterRequest extends FormRequest
         return [
             'name' => 'sometimes|required|string|max:200',
             'order' => 'sometimes|required|integer|min:1',
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
         ];
     }
 }

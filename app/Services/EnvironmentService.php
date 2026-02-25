@@ -8,22 +8,18 @@ class EnvironmentService
 {
     /**
      * Update an environment variable in the .env file safely without breaking formatting.
-     *
-     * @param string $key
-     * @param string $value
-     * @return bool
      */
     public function setEnvironmentValue(string $key, string $value): bool
     {
         $path = app()->environmentFilePath();
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             return false;
         }
 
         // Quote the value if it has spaces
         if (preg_match('/\s/', $value)) {
-            $value = '"' . $value . '"';
+            $value = '"'.$value.'"';
         }
 
         $envFile = File::get($path);

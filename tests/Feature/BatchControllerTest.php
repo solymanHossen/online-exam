@@ -13,6 +13,7 @@ class BatchControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
 
     protected function setUp(): void
@@ -35,7 +36,6 @@ class BatchControllerTest extends TestCase
      * 1. AUTHENTICATION & AUTHORIZATION TESTS
      * ==========================================
      */
-
     public function test_unauthenticated_users_are_redirected_to_login()
     {
         $response = $this->get(route('admin.batches.index'));
@@ -84,7 +84,6 @@ class BatchControllerTest extends TestCase
      * 2. INERTIA.JS ASSERTION TESTS
      * ==========================================
      */
-
     public function test_index_renders_inertia_component_with_paginated_batches()
     {
         // Generate existing batches
@@ -93,7 +92,7 @@ class BatchControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.batches.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Batches/Index')
                 ->has('batches.data', 5) // Check pagination structure 'data' array has 5 items
         );
@@ -104,7 +103,6 @@ class BatchControllerTest extends TestCase
      * 3. VALIDATION & SAD PATH TESTS
      * ==========================================
      */
-
     public function test_store_requires_mandatory_fields()
     {
         $response = $this->actingAs($this->admin)->post(route('admin.batches.store'), []);
@@ -112,7 +110,7 @@ class BatchControllerTest extends TestCase
         $response->assertInvalid([
             'name',
             'class_level',
-            'year'
+            'year',
         ]);
     }
 
@@ -146,7 +144,7 @@ class BatchControllerTest extends TestCase
         $response->assertInvalid([
             'name',
             'class_level',
-            'year'
+            'year',
         ]);
     }
 
@@ -155,7 +153,6 @@ class BatchControllerTest extends TestCase
      * 4. HAPPY PATHS (CRUD) & DB ISOLATION
      * ==========================================
      */
-
     public function test_admin_can_store_batch_successfully()
     {
         $payload = [
@@ -218,7 +215,7 @@ class BatchControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseMissing('batches', [
-            'id' => $batch->id
+            'id' => $batch->id,
         ]);
     }
 }

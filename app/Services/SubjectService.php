@@ -2,11 +2,11 @@
 
 namespace App\Services;
 
-use App\Models\Subject;
 use App\Models\Chapter;
+use App\Models\Subject;
 use App\Repositories\SubjectRepository;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SubjectService extends BaseService
 {

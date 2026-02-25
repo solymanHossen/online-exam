@@ -9,7 +9,6 @@ use App\Http\Resources\BatchResource;
 use App\Models\Batch;
 use App\Services\BatchService;
 use App\Traits\ResponseTrait;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

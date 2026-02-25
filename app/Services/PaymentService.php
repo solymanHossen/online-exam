@@ -11,6 +11,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PaymentService extends BaseService
 {
     protected PaymentRepository $repository;
+
     protected PaymentGatewayFactory $gatewayFactory;
 
     public function __construct(PaymentRepository $repository, PaymentGatewayFactory $gatewayFactory)
@@ -32,12 +33,7 @@ class PaymentService extends BaseService
     /**
      * Process checkout/payment initiation using the selected gateway.
      *
-     * @param string $gatewayName 'stripe' | 'paypal'
-     * @param float $amount
-     * @param string $currency
-     * @param User $user
-     * @param string $type
-     * @param string $description
+     * @param  string  $gatewayName  'stripe' | 'paypal'
      * @return array Contains redirect_url and locally created Payment model array.
      */
     public function processPayment(string $gatewayName, float $amount, string $currency, User $user, string $type = 'exam_fee', string $description = ''): array
@@ -45,7 +41,7 @@ class PaymentService extends BaseService
         $gateway = $this->gatewayFactory->make($gatewayName);
 
         $gatewayResponse = $gateway->charge($amount, $currency, [
-            'return_url' => route('student.payments.index') // Or a dedicated callback route
+            'return_url' => route('student.payments.index'), // Or a dedicated callback route
         ]);
 
         $payment = $this->repository->create([
@@ -67,10 +63,6 @@ class PaymentService extends BaseService
 
     /**
      * Handle payment verification from gateway callbacks.
-     *
-     * @param string $gatewayName
-     * @param string $transactionId
-     * @return bool
      */
     public function verifyPayment(string $gatewayName, string $transactionId): bool
     {
@@ -81,6 +73,7 @@ class PaymentService extends BaseService
             $payment = $this->repository->findByTransactionId($transactionId);
             if ($payment) {
                 $this->repository->update($payment, ['status' => 'completed']);
+
                 return true;
             }
         }

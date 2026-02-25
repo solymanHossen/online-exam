@@ -18,8 +18,11 @@ class QuestionControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $student;
+
     private Subject $subject;
+
     private Chapter $chapter;
 
     protected function setUp(): void
@@ -43,7 +46,6 @@ class QuestionControllerTest extends TestCase
      * 1. AUTHENTICATION & AUTHORIZATION TESTS
      * ==========================================
      */
-
     public function test_unauthenticated_users_are_redirected_to_login()
     {
         $response = $this->get(route('admin.questions.index'));
@@ -55,7 +57,7 @@ class QuestionControllerTest extends TestCase
 
     public function test_student_users_receive_forbidden_error_accessing_admin_routes()
     {
-        // Notice: Laravel 11 applies the 'role:admin' middleware. 
+        // Notice: Laravel 11 applies the 'role:admin' middleware.
         // We assert a 403 Forbidden or Redirect depending on exact custom middleware implementation.
         // If it throws an authorization exception, it's captured as 403.
 
@@ -77,20 +79,19 @@ class QuestionControllerTest extends TestCase
      * 2. INERTIA.JS ASSERTION TESTS
      * ==========================================
      */
-
     public function test_index_renders_inertia_component_with_paginated_questions()
     {
         // Generate existing questions
         Question::factory(5)->create([
             'subject_id' => $this->subject->id,
             'chapter_id' => $this->chapter->id,
-            'created_by' => $this->admin->id
+            'created_by' => $this->admin->id,
         ]);
 
         $response = $this->actingAs($this->admin)->get(route('admin.questions.index'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Questions/Index')
                 ->has('questions.data', 5) // Check pagination structure 'data' array has 5 items
                 ->has('questions.links')   // Verify pagination links exist
@@ -102,7 +103,7 @@ class QuestionControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.questions.create'));
 
         $response->assertInertia(
-            fn(AssertableInertia $page) => $page
+            fn (AssertableInertia $page) => $page
                 ->component('Admin/Questions/Form')
         );
     }
@@ -112,7 +113,6 @@ class QuestionControllerTest extends TestCase
      * 3. VALIDATION & SAD PATH TESTS
      * ==========================================
      */
-
     public function test_store_requires_mandatory_fields()
     {
         $response = $this->actingAs($this->admin)
@@ -125,7 +125,7 @@ class QuestionControllerTest extends TestCase
             'difficulty',
             'marks',
             'negative_marks',
-            'options'
+            'options',
         ]);
     }
 
@@ -140,8 +140,8 @@ class QuestionControllerTest extends TestCase
             'negative_marks' => -1, // Invalid MIN
             'options' => [
                 ['option_text' => 'Opt A'],
-                ['option_text' => 'Opt B']
-            ]
+                ['option_text' => 'Opt B'],
+            ],
         ];
 
         $response = $this->actingAs($this->admin)
@@ -160,8 +160,8 @@ class QuestionControllerTest extends TestCase
             'marks' => 2,
             'negative_marks' => 0,
             'options' => [
-                ['option_text' => 'Only One Option', 'is_correct' => true] // Missing min:2
-            ]
+                ['option_text' => 'Only One Option', 'is_correct' => true], // Missing min:2
+            ],
         ];
 
         $response = $this->actingAs($this->admin)
@@ -175,7 +175,6 @@ class QuestionControllerTest extends TestCase
      * 4. HAPPY PATHS (CRUD) & EDGE CASES
      * ==========================================
      */
-
     public function test_admin_can_store_question_with_options_successfully()
     {
         $payload = [
@@ -188,7 +187,7 @@ class QuestionControllerTest extends TestCase
             'options' => [
                 ['option_text' => '4', 'is_correct' => true],
                 ['option_text' => '5', 'is_correct' => false],
-            ]
+            ],
         ];
 
         $response = $this->actingAs($this->admin)
@@ -231,7 +230,7 @@ class QuestionControllerTest extends TestCase
             'options' => [
                 ['option_text' => 'Diagram A', 'is_correct' => true, 'option_image' => $optionImage],
                 ['option_text' => 'Diagram B', 'is_correct' => false],
-            ]
+            ],
         ];
 
         $response = $this->actingAs($this->admin)
@@ -253,7 +252,7 @@ class QuestionControllerTest extends TestCase
             'subject_id' => $this->subject->id,
             'chapter_id' => $this->chapter->id,
             'question_text' => 'Old Text',
-            'marks' => 2
+            'marks' => 2,
         ]);
 
         $updatePayload = [
@@ -295,7 +294,7 @@ class QuestionControllerTest extends TestCase
         $response->assertRedirect(route('admin.questions.index'));
 
         $this->assertDatabaseMissing('questions', [
-            'id' => $question->id
+            'id' => $question->id,
         ]);
     }
 }

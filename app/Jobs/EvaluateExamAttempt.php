@@ -33,8 +33,9 @@ class EvaluateExamAttempt implements ShouldQueue
             $question = $answer->question;
             $selectedOption = $answer->selectedOption;
 
-            if (!$selectedOption) {
+            if (! $selectedOption) {
                 $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
+
                 continue;
             }
 
@@ -50,7 +51,7 @@ class EvaluateExamAttempt implements ShouldQueue
             }
 
             // Aggregate Statistics in memory to prevent N+1 Database Writes
-            if (!isset($statsUpdates[$question->id])) {
+            if (! isset($statsUpdates[$question->id])) {
                 $statsUpdates[$question->id] = ['attempted' => 0, 'correct' => 0];
             }
             $statsUpdates[$question->id]['attempted'] += 1;
@@ -60,7 +61,7 @@ class EvaluateExamAttempt implements ShouldQueue
         }
 
         // Bulk Upsert Statistics in a single optimized query
-        if (!empty($statsUpdates)) {
+        if (! empty($statsUpdates)) {
             $dbStats = QuestionStatistic::whereIn('question_id', array_keys($statsUpdates))->get()->keyBy('question_id');
 
             foreach ($statsUpdates as $qId => $data) {

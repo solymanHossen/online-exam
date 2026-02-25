@@ -2,22 +2,21 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
-use App\Models\Role;
-use App\Models\User;
 use App\Models\Batch;
-use App\Models\Subject;
 use App\Models\Chapter;
+use App\Models\Exam;
+use App\Models\ExamAttempt;
+use App\Models\ExamQuestion;
+use App\Models\Payment;
 use App\Models\Question;
 use App\Models\QuestionOption;
-use App\Models\Exam;
-use App\Models\ExamQuestion;
+use App\Models\Role;
 use App\Models\Student;
-use App\Models\ExamAttempt;
 use App\Models\StudentAnswer;
-use App\Models\Payment;
-use Illuminate\Support\Facades\DB;
+use App\Models\Subject;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {

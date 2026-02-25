@@ -4,8 +4,8 @@ namespace App\Services;
 
 use App\Models\Batch;
 use App\Repositories\BatchRepository;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class BatchService extends BaseService
 {
@@ -29,6 +29,7 @@ class BatchService extends BaseService
     public function updateBatch(Batch $batch, array $data): Batch
     {
         $this->repository->update($batch, $data);
+
         return $batch;
     }
 

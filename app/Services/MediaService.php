@@ -16,14 +16,14 @@ class MediaService extends BaseService
     {
         // 1. Strict MIME Type Validation
         $allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (!in_array($file->getMimeType(), $allowedMimes)) {
+        if (! in_array($file->getMimeType(), $allowedMimes)) {
             throw new \InvalidArgumentException('Invalid file type detected. Only images are allowed.');
         }
 
         // 2. Strict Extension Validation
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
         $extension = strtolower($file->getClientOriginalExtension());
-        if (!in_array($extension, $allowedExtensions)) {
+        if (! in_array($extension, $allowedExtensions)) {
             throw new \InvalidArgumentException('Invalid image extension.');
         }
 
@@ -37,12 +37,12 @@ class MediaService extends BaseService
         }
 
         // 4. Verify Image Signature (Ensure it's actually an image and not a disguised script)
-        if (!@getimagesize($file->getRealPath())) {
+        if (! @getimagesize($file->getRealPath())) {
             throw new \InvalidArgumentException('File contents do not match a valid image signature.');
         }
 
         // 5. Generate secure, unpredictable filename ignoring client input
-        $filename = Str::random(40) . '.' . $extension;
+        $filename = Str::random(40).'.'.$extension;
 
         // Store the file in public storage and return the URL
         $path = $file->storeAs($directory, $filename, 'public');

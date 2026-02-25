@@ -25,10 +25,11 @@ class CheckInstallation
             if ($isInstalled) {
                 return redirect('/');
             }
+
             return $next($request);
         }
 
-        if (!$isInstalled) {
+        if (! $isInstalled) {
             // Avoid redirecting API routes or assets
             if ($request->wantsJson() || $request->is('build/*') || $request->is('api/*')) {
                 return $next($request);

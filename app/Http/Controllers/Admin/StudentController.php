@@ -9,7 +9,6 @@ use App\Models\Role;
 use App\Models\Student;
 use App\Services\StudentService;
 use App\Traits\ResponseTrait;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 

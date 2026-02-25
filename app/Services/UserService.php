@@ -3,8 +3,8 @@
 namespace App\Services;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Hash;
 
 class UserService extends BaseService
 {
@@ -29,6 +29,7 @@ class UserService extends BaseService
     public function createUser(array $data): User
     {
         $data['password'] = Hash::make($data['password']);
+
         return User::create($data);
     }
 
@@ -37,6 +38,7 @@ class UserService extends BaseService
         if (isset($data['password'])) {
             $data['password'] = Hash::make($data['password']);
         }
+
         return $user->update($data);
     }
 }

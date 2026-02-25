@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-
+use App\Traits\TimezoneSerializable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Traits\TimezoneSerializable;
 
 class ExamAttempt extends Model
 {
@@ -20,7 +19,7 @@ class ExamAttempt extends Model
         'start_time',
         'end_time',
         'total_score',
-        'is_completed'
+        'is_completed',
     ];
 
     protected $casts = [
