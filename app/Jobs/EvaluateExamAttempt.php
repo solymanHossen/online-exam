@@ -25,18 +25,19 @@ class EvaluateExamAttempt implements ShouldQueue
         $attempt = $this->attempt->load(['exam', 'answers.question', 'answers.selectedOption']);
 
         $totalScore = 0;
+        $statsUpdates = [];
 
         foreach ($attempt->answers as $answer) {
             $question = $answer->question;
             $selectedOption = $answer->selectedOption;
 
             if (!$selectedOption) {
-                // Unanswered
                 $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
                 continue;
             }
 
-            if ($selectedOption->is_correct) {
+            $isCorrect = $selectedOption->is_correct;
+            if ($isCorrect) {
                 $marks = $question->marks;
                 $answer->update(['is_correct' => true, 'marks_awarded' => $marks]);
                 $totalScore += $marks;
@@ -46,18 +47,35 @@ class EvaluateExamAttempt implements ShouldQueue
                 $totalScore -= $negativeMarks;
             }
 
-            // Update Statistics
-            $stat = \App\Models\QuestionStatistic::firstOrCreate(
-                ['question_id' => $question->id],
-                ['times_attempted' => 0, 'times_correct' => 0]
-            );
-            $stat->increment('times_attempted');
-            if ($selectedOption->is_correct) {
-                $stat->increment('times_correct');
+            // Aggregate Statistics in memory to prevent N+1 Database Writes
+            if (!isset($statsUpdates[$question->id])) {
+                $statsUpdates[$question->id] = ['attempted' => 0, 'correct' => 0];
+            }
+            $statsUpdates[$question->id]['attempted'] += 1;
+            if ($isCorrect) {
+                $statsUpdates[$question->id]['correct'] += 1;
             }
         }
 
-        // Prevent negative total scores if required
+        // Bulk Upsert Statistics in a single optimized query
+        if (!empty($statsUpdates)) {
+            $dbStats = \App\Models\QuestionStatistic::whereIn('question_id', array_keys($statsUpdates))->get()->keyBy('question_id');
+
+            foreach ($statsUpdates as $qId => $data) {
+                if ($dbStats->has($qId)) {
+                    $dbStats[$qId]->times_attempted += $data['attempted'];
+                    $dbStats[$qId]->times_correct += $data['correct'];
+                    $dbStats[$qId]->save();
+                } else {
+                    \App\Models\QuestionStatistic::create([
+                        'question_id' => $qId,
+                        'times_attempted' => $data['attempted'],
+                        'times_correct' => $data['correct'],
+                    ]);
+                }
+            }
+        }
+
         $totalScore = max(0, $totalScore);
 
         $attempt->update([

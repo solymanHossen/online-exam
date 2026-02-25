@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
 
-class QuestionResource extends JsonResource
+class QuestionOptionResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,11 +17,9 @@ class QuestionResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'question_text' => $this->question_text,
-            'question_image' => $this->question_image ? Storage::url($this->question_image) : null,
-            'marks' => $this->marks,
-            'negative_marks' => $this->negative_marks,
-            'options' => QuestionOptionResource::collection($this->whenLoaded('options')),
+            'option_text' => $this->option_text,
+            'option_image' => $this->option_image ? Storage::url($this->option_image) : null,
+            // STRICLTY avoiding 'is_correct' here to prevent cheating
         ];
     }
 }

@@ -11,15 +11,22 @@ use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
+use App\Http\Resources\ExamResource;
+use App\Http\Resources\ExamAttemptResource;
+use App\Repositories\ExamRepository;
+use App\Models\ExamAttempt;
+
 class ExamController extends Controller
 {
     use ResponseTrait;
 
     protected ExamService $examService;
+    protected ExamRepository $examRepository;
 
-    public function __construct(ExamService $examService)
+    public function __construct(ExamService $examService, ExamRepository $examRepository)
     {
         $this->examService = $examService;
+        $this->examRepository = $examRepository;
     }
 
     public function index(): Response
@@ -36,14 +43,10 @@ class ExamController extends Controller
     {
         Gate::authorize('view', $exam);
 
-        $exam->load([
-            'questions.question.options',
-            'questions.question' => function ($q) {
-                $q->select('id', 'question_text', 'question_image', 'marks', 'negative_marks');
-            }
-        ]);
+        // Task 1: N+1 Query Elimination using the Repository
+        $optimizedExam = $this->examRepository->getExamWithQuestions($exam->id);
 
-        $attempt = \App\Models\ExamAttempt::firstOrCreate(
+        $attempt = ExamAttempt::firstOrCreate(
             ['exam_id' => $exam->id, 'user_id' => auth()->id(), 'is_completed' => false],
             [
                 'start_time' => now(),
@@ -54,8 +57,9 @@ class ExamController extends Controller
         $attempt->load('answers');
 
         return Inertia::render('Student/ExamRoom', [
-            'exam' => $exam,
-            'attempt' => $attempt,
+            // Task 2: Inertia Payload Optimization via API Resources
+            'exam' => new ExamResource($optimizedExam),
+            'attempt' => new ExamAttemptResource($attempt),
         ]);
     }
 
