@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Task 2: Webhook CSRF Exclusions
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/*', // Exclude Stripe/PayPal and other webhooks from CSRF protection
+        ]);
+
         $middleware->web(append: [
             \App\Http\Middleware\CheckInstallation::class,
             \App\Http\Middleware\SetLocale::class,

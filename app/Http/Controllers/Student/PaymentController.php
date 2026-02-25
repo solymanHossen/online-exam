@@ -12,6 +12,7 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Cache;
 
 class PaymentController extends Controller
 {
@@ -46,23 +47,35 @@ class PaymentController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $gatewayName = $request->input('gateway');
-        $amount = (float) $request->input('amount');
-        $currency = 'USD'; // You can make this dynamic if needed
         $user = Auth::user();
 
-        // Process payment via service
-        $result = $this->paymentService->processPayment(
-            $gatewayName,
-            $amount,
-            $currency,
-            $user,
-            $request->input('type', 'exam_fee'),
-            $request->input('description', '')
-        );
+        // Task 1: Prevent Race Conditions (Double Checking out) using Atomic Locks
+        $lock = Cache::lock("initiate_checkout_{$user->id}", 10);
 
-        // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
-        return Inertia::location($result['redirect_url']);
+        if ($lock->get()) {
+            try {
+                $gatewayName = $request->input('gateway');
+                $amount = (float) $request->input('amount');
+                $currency = 'USD'; // You can make this dynamic if needed
+
+                // Process payment via service
+                $result = $this->paymentService->processPayment(
+                    $gatewayName,
+                    $amount,
+                    $currency,
+                    $user,
+                    $request->input('type', 'exam_fee'),
+                    $request->input('description', '')
+                );
+
+                // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
+                return Inertia::location($result['redirect_url']);
+            } finally {
+                $lock->release();
+            }
+        }
+
+        return back()->with('error', 'Checkout is already in progress, please wait.');
     }
 
     /**

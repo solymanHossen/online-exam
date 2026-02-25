@@ -9,10 +9,11 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Enums\ExamStatus;
+use App\Traits\TimezoneSerializable;
 
 class Exam extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, TimezoneSerializable;
 
     protected $fillable = [
         'title',

@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Traits\TimezoneSerializable;
 
 class ExamAttempt extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory, HasUuids, TimezoneSerializable;
 
     protected $fillable = [
         'exam_id',

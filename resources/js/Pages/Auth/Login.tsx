@@ -10,9 +10,11 @@ import { FormEventHandler } from 'react';
 export default function Login({
     status,
     canResetPassword,
+    appEnv = 'local', // CodeCanyon Demo Setup: Assumes 'appEnv' is passed from HandleInertiaRequests or the Controller
 }: {
     status?: string;
     canResetPassword: boolean;
+    appEnv?: string;
 }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -105,6 +107,38 @@ export default function Login({
                     </PrimaryButton>
                 </div>
             </form>
+
+            {/* Task 4: Login Demo Credentials */}
+            {(appEnv === 'demo' || appEnv === 'local') && (
+                <div className="mt-8 border-t pt-6">
+                    <h3 className="text-sm font-medium text-gray-500 mb-4 text-center uppercase tracking-wider">
+                        One-Click Demo Access
+                    </h3>
+                    <div className="grid grid-cols-3 gap-3">
+                        <button
+                            onClick={() => { setData('email', 'admin@example.com'); setData('password', 'password'); }}
+                            type="button"
+                            className="rounded-md bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 shadow-sm hover:bg-indigo-100 border border-indigo-200 transition-colors"
+                        >
+                            Admin
+                        </button>
+                        <button
+                            onClick={() => { setData('email', 'teacher@example.com'); setData('password', 'password'); }}
+                            type="button"
+                            className="rounded-md bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 shadow-sm hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                        >
+                            Teacher
+                        </button>
+                        <button
+                            onClick={() => { setData('email', 'student@example.com'); setData('password', 'password'); }}
+                            type="button"
+                            className="rounded-md bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm hover:bg-blue-100 border border-blue-200 transition-colors"
+                        >
+                            Student
+                        </button>
+                    </div>
+                </div>
+            )}
         </GuestLayout>
     );
 }

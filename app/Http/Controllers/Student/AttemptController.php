@@ -9,6 +9,7 @@ use App\Jobs\EvaluateExamAttempt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class AttemptController extends Controller
 {
@@ -44,14 +45,29 @@ class AttemptController extends Controller
     {
         Gate::authorize('update', $attempt);
 
-        $attempt->update([
-            'is_completed' => true,
-            'end_time' => min($attempt->end_time, now()), // Capture actual submit time if earlier
-        ]);
+        // Task 1: Prevent Race Conditions (Double Submission) using Atomic Locks
+        $lock = Cache::lock("submit_exam_attempt_{$attempt->id}", 10);
 
-        // Dispatch background job to evaluate
-        EvaluateExamAttempt::dispatch($attempt);
+        if ($lock->get()) {
+            try {
+                if ($attempt->is_completed) {
+                    return redirect()->route('student.exams.index')->with('error', 'Exam is already submitted.');
+                }
 
-        return redirect()->route('student.exams.index')->with('success', 'Exam submitted successfully! Your results will be available shortly.');
+                $attempt->update([
+                    'is_completed' => true,
+                    'end_time' => min($attempt->end_time, now()), // Capture actual submit time if earlier
+                ]);
+
+                // Dispatch background job to evaluate
+                EvaluateExamAttempt::dispatch($attempt);
+
+                return redirect()->route('student.exams.index')->with('success', 'Exam submitted successfully! Your results will be available shortly.');
+            } finally {
+                $lock->release();
+            }
+        }
+
+        return redirect()->route('student.exams.index')->with('error', 'Submission is already in progress, please wait.');
     }
 }
