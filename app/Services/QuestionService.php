@@ -4,8 +4,9 @@ namespace App\Services;
 
 use App\Models\Question;
 use App\Repositories\QuestionRepository;
-use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class QuestionService extends BaseService
 {
@@ -23,7 +24,7 @@ class QuestionService extends BaseService
 
     public function createQuestion(array $data, array $options): Model
     {
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($data, $options) {
+        return DB::transaction(function () use ($data, $options) {
             $question = $this->repository->create($data);
 
             if (!empty($options)) {

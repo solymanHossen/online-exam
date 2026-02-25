@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreQuestionRequest;
 use App\Http\Requests\Admin\UpdateQuestionRequest;
 use App\Models\Question;
+use App\Models\QuestionStatistic;
 use App\Services\QuestionService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
@@ -40,7 +41,7 @@ class QuestionController extends Controller
     public function statistics(Request $request): Response
     {
         // Cursor pagination fetches data based on a pointer (ID or Time), avoiding FULL table scans.
-        $statistics = \App\Models\QuestionStatistic::with('question:id,question_text')
+        $statistics = QuestionStatistic::with('question:id,question_text')
             ->orderBy('times_attempted', 'desc') // Requires the new database index to be fast
             ->cursorPaginate(50);
 

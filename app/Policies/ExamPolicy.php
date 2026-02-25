@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Exam;
+use App\Models\Student;
 use App\Models\User;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
@@ -20,7 +21,7 @@ class ExamPolicy
         }
 
         // Student can only view the exam if they belong to the exam's batch, or if it's available for all (batch_id null)
-        $student = \App\Models\Student::where('user_id', $user->id)->first();
+        $student = Student::where('user_id', $user->id)->first();
         if (!$student) {
             return false;
         }

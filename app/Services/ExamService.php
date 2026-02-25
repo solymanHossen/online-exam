@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Exam;
+use App\Models\Question;
 use App\Repositories\ExamRepository;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Exception;
 
 class ExamService extends BaseService
@@ -49,7 +51,7 @@ class ExamService extends BaseService
             $examQuestions = [];
             foreach ($questionIds as $index => $qId) {
                 $examQuestions[] = [
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'exam_id' => $exam->id,
                     'question_id' => $qId,
                     'question_order' => $index + 1,
@@ -61,7 +63,7 @@ class ExamService extends BaseService
             $exam->questions()->insert($examQuestions);
 
             // Optionally, update exam total marks based on attached questions
-            $totalMarks = \App\Models\Question::whereIn('id', $questionIds)->sum('marks');
+            $totalMarks = Question::whereIn('id', $questionIds)->sum('marks');
             $exam->update(['total_marks' => $totalMarks]);
         });
     }

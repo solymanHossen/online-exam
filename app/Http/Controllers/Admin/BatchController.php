@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreBatchRequest;
+use App\Http\Requests\Admin\UpdateBatchRequest;
 use App\Http\Resources\BatchResource;
 use App\Models\Batch;
 use App\Services\BatchService;
@@ -31,14 +33,14 @@ class BatchController extends Controller
         ]);
     }
 
-    public function store(\App\Http\Requests\Admin\StoreBatchRequest $request)
+    public function store(StoreBatchRequest $request)
     {
         $this->batchService->createBatch($request->validated());
 
         return redirect()->route('admin.batches.index')->with('success', 'Batch created successfully.');
     }
 
-    public function update(\App\Http\Requests\Admin\UpdateBatchRequest $request, Batch $batch)
+    public function update(UpdateBatchRequest $request, Batch $batch)
     {
         $this->batchService->updateBatch($batch, $request->validated());
 

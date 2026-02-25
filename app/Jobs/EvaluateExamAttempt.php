@@ -2,9 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Models\ExamAttempt;
+use App\Models\ExamRanking;
+use App\Models\QuestionStatistic;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
-use App\Models\ExamAttempt;
 
 class EvaluateExamAttempt implements ShouldQueue
 {
@@ -59,7 +61,7 @@ class EvaluateExamAttempt implements ShouldQueue
 
         // Bulk Upsert Statistics in a single optimized query
         if (!empty($statsUpdates)) {
-            $dbStats = \App\Models\QuestionStatistic::whereIn('question_id', array_keys($statsUpdates))->get()->keyBy('question_id');
+            $dbStats = QuestionStatistic::whereIn('question_id', array_keys($statsUpdates))->get()->keyBy('question_id');
 
             foreach ($statsUpdates as $qId => $data) {
                 if ($dbStats->has($qId)) {
@@ -67,7 +69,7 @@ class EvaluateExamAttempt implements ShouldQueue
                     $dbStats[$qId]->times_correct += $data['correct'];
                     $dbStats[$qId]->save();
                 } else {
-                    \App\Models\QuestionStatistic::create([
+                    QuestionStatistic::create([
                         'question_id' => $qId,
                         'times_attempted' => $data['attempted'],
                         'times_correct' => $data['correct'],
@@ -92,7 +94,7 @@ class EvaluateExamAttempt implements ShouldQueue
 
         $rank = 1;
         foreach ($allAttempts as $a) {
-            \App\Models\ExamRanking::updateOrCreate(
+            ExamRanking::updateOrCreate(
                 ['exam_id' => $attempt->exam_id, 'user_id' => $a->user_id],
                 ['rank' => $rank++, 'total_score' => $a->total_score]
             );

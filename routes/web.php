@@ -1,9 +1,29 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+
+// General Controllers
+use App\Http\Controllers\InstallController;
+use App\Http\Controllers\LocalizationController;
+use App\Http\Controllers\ProfileController;
+
+// Admin Controllers
+use App\Http\Controllers\Admin\BatchController;
+use App\Http\Controllers\Admin\ChapterController;
+use App\Http\Controllers\Admin\ExamController as AdminExamController;
+use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
+use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\StudentController as AdminStudentController;
+use App\Http\Controllers\Admin\SubjectController;
+use App\Http\Controllers\Admin\SystemUtilityController;
+use App\Http\Controllers\Admin\UserController;
+
+// Student Controllers
+use App\Http\Controllers\Student\AttemptController;
+use App\Http\Controllers\Student\ExamController as StudentExamController;
+use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,21 +41,21 @@ use Inertia\Inertia;
  * INSTALLER ROUTES
  * ==========================================================
  */
-Route::prefix('install')->name('install.')->group(function () {
-    Route::get('/', [\App\Http\Controllers\InstallController::class, 'welcome'])->name('welcome');
-    Route::get('/requirements', [\App\Http\Controllers\InstallController::class, 'requirements'])->name('requirements');
-    Route::get('/permissions', [\App\Http\Controllers\InstallController::class, 'permissions'])->name('permissions');
+Route::prefix('install')->name('install.')->controller(InstallController::class)->group(function () {
+    Route::get('/', 'welcome')->name('welcome');
+    Route::get('/requirements', 'requirements')->name('requirements');
+    Route::get('/permissions', 'permissions')->name('permissions');
 
-    Route::get('/database', [\App\Http\Controllers\InstallController::class, 'database'])->name('database');
-    Route::post('/database', [\App\Http\Controllers\InstallController::class, 'processDatabase'])->name('database.process');
+    Route::get('/database', 'database')->name('database');
+    Route::post('/database', 'processDatabase')->name('database.process');
 
-    Route::get('/migrations', [\App\Http\Controllers\InstallController::class, 'migrations'])->name('migrations');
-    Route::post('/migrations', [\App\Http\Controllers\InstallController::class, 'runMigrations'])->name('migrations.run');
+    Route::get('/migrations', 'migrations')->name('migrations');
+    Route::post('/migrations', 'runMigrations')->name('migrations.run');
 
-    Route::get('/admin', [\App\Http\Controllers\InstallController::class, 'admin'])->name('admin');
-    Route::post('/admin', [\App\Http\Controllers\InstallController::class, 'processAdmin'])->name('admin.process');
+    Route::get('/admin', 'admin')->name('admin');
+    Route::post('/admin', 'processAdmin')->name('admin.process');
 
-    Route::get('/complete', [\App\Http\Controllers\InstallController::class, 'complete'])->name('complete');
+    Route::get('/complete', 'complete')->name('complete');
 });
 
 Route::get('/', function () {
@@ -52,9 +72,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         return Inertia::render('Dashboard');
     })->name('dashboard');
 
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::controller(ProfileController::class)->group(function () {
+        Route::get('/profile', 'edit')->name('profile.edit');
+        Route::patch('/profile', 'update')->name('profile.update');
+        Route::delete('/profile', 'destroy')->name('profile.destroy');
+    });
 });
 
 /**
@@ -63,26 +85,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
  * ==========================================================
  */
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
-    Route::resource('batches', \App\Http\Controllers\Admin\BatchController::class);
-    Route::resource('subjects', \App\Http\Controllers\Admin\SubjectController::class);
-    Route::resource('chapters', \App\Http\Controllers\Admin\ChapterController::class);
-    Route::resource('questions', \App\Http\Controllers\Admin\QuestionController::class);
-    Route::resource('exams', \App\Http\Controllers\Admin\ExamController::class);
-    Route::resource('students', \App\Http\Controllers\Admin\StudentController::class);
-    Route::resource('payments', \App\Http\Controllers\Admin\PaymentController::class)->only(['index', 'show']);
+    Route::resource('users', UserController::class);
+    Route::resource('batches', BatchController::class);
+    Route::resource('subjects', SubjectController::class);
+    Route::resource('chapters', ChapterController::class);
+    Route::resource('questions', QuestionController::class);
+    Route::resource('exams', AdminExamController::class);
+    Route::resource('students', AdminStudentController::class);
+    Route::resource('payments', AdminPaymentController::class)->only(['index', 'show']);
 
     // System Utilities (cPanel / Shared Hosting Support)
-    Route::prefix('system-utilities')->name('system-utilities.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'index'])->name('index');
-        Route::post('/link-storage', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'linkStorage'])->name('link-storage');
-        Route::post('/clear-caches', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'clearCaches'])->name('clear-caches');
-        Route::post('/update-env', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'updateEnvSettings'])->name('update-env');
+    Route::prefix('system-utilities')->name('system-utilities.')->controller(SystemUtilityController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/link-storage', 'linkStorage')->name('link-storage');
+        Route::post('/clear-caches', 'clearCaches')->name('clear-caches');
+        Route::post('/update-env', 'updateEnvSettings')->name('update-env');
     });
 });
 
 // Dedicated Public/Cron Route for Queue Processing (Secured via token or run locally via cPanel cron)
-Route::get('/cron/process-queue', [\App\Http\Controllers\Admin\SystemUtilityController::class, 'processQueue'])->name('cron.process-queue');
+Route::get('/cron/process-queue', [SystemUtilityController::class, 'processQueue'])->name('cron.process-queue');
 
 /**
  * ==========================================================
@@ -90,19 +112,26 @@ Route::get('/cron/process-queue', [\App\Http\Controllers\Admin\SystemUtilityCont
  * ==========================================================
  */
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
-    Route::get('exams', [\App\Http\Controllers\Student\ExamController::class, 'index'])->name('exams.index');
-    Route::get('exams/{exam}/room', [\App\Http\Controllers\Student\ExamController::class, 'room'])->name('exams.room');
 
-    Route::post('attempts/{attempt}/save-answer', [\App\Http\Controllers\Student\AttemptController::class, 'saveAnswer'])->name('attempts.save-answer');
-    Route::post('attempts/{attempt}/submit', [\App\Http\Controllers\Student\AttemptController::class, 'submit'])->name('attempts.submit');
+    Route::controller(StudentExamController::class)->prefix('exams')->name('exams.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{exam}/room', 'room')->name('room');
+    });
 
-    Route::get('payments', [\App\Http\Controllers\Student\PaymentController::class, 'index'])->name('payments.index');
-    Route::post('payments/checkout', [\App\Http\Controllers\Student\PaymentController::class, 'initiateCheckout'])->name('payments.checkout');
-    Route::get('payments/callback', [\App\Http\Controllers\Student\PaymentController::class, 'callback'])->name('payments.callback');
+    Route::controller(AttemptController::class)->prefix('attempts')->name('attempts.')->group(function () {
+        Route::post('/{attempt}/save-answer', 'saveAnswer')->name('save-answer');
+        Route::post('/{attempt}/submit', 'submit')->name('submit');
+    });
+
+    Route::controller(StudentPaymentController::class)->prefix('payments')->name('payments.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::post('/checkout', 'initiateCheckout')->name('checkout');
+        Route::get('/callback', 'callback')->name('callback');
+    });
 });
 
-Route::post('webhooks/payments/{gateway}', [\App\Http\Controllers\Student\PaymentController::class, 'webhook'])->name('webhooks.payments');
+Route::post('webhooks/payments/{gateway}', [StudentPaymentController::class, 'webhook'])->name('webhooks.payments');
 
-Route::post('/locale', [\App\Http\Controllers\LocalizationController::class, 'update'])->name('locale.update');
+Route::post('/locale', [LocalizationController::class, 'update'])->name('locale.update');
 
 require __DIR__ . '/auth.php';

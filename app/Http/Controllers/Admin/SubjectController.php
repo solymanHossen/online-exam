@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreSubjectRequest;
+use App\Http\Requests\Admin\UpdateSubjectRequest;
 use App\Http\Resources\SubjectResource;
 use App\Models\Subject;
 use App\Services\SubjectService;
@@ -31,14 +33,14 @@ class SubjectController extends Controller
         ]);
     }
 
-    public function store(\App\Http\Requests\Admin\StoreSubjectRequest $request)
+    public function store(StoreSubjectRequest $request)
     {
         $this->subjectService->createSubject($request->validated());
 
         return redirect()->route('admin.subjects.index')->with('success', 'Subject created successfully.');
     }
 
-    public function update(\App\Http\Requests\Admin\UpdateSubjectRequest $request, Subject $subject)
+    public function update(UpdateSubjectRequest $request, Subject $subject)
     {
         $this->subjectService->updateSubject($subject, $request->validated());
 

@@ -4,6 +4,7 @@ namespace App\Actions;
 
 use App\Models\Question;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Exception;
 
 class StoreQuestionAction
@@ -32,7 +33,7 @@ class StoreQuestionAction
                 // Ensure required keys exist
                 $options[] = [
                     'question_id' => $question->id,
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'option_text' => $opt['option_text'] ?? null,
                     'option_image' => $opt['option_image'] ?? null,
                     'is_correct' => $opt['is_correct'] ?? false,

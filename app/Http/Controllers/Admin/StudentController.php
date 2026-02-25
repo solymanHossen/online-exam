@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStudentRequest;
 use App\Http\Requests\Admin\UpdateStudentRequest;
+use App\Models\Role;
 use App\Models\Student;
 use App\Services\StudentService;
 use App\Traits\ResponseTrait;
@@ -37,7 +38,7 @@ class StudentController extends Controller
         $data = $request->validated();
 
         // Handle case-insensitivity depending on DB driver (SQLite/Postgres/MySQL)
-        $roleId = \App\Models\Role::whereRaw('LOWER(name) = ?', ['student'])->first()->id ?? null;
+        $roleId = Role::whereRaw('LOWER(name) = ?', ['student'])->first()->id ?? null;
 
         $userData = [
             'name' => $data['name'],
