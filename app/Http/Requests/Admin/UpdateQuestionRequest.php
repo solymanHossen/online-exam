@@ -14,6 +14,21 @@ class UpdateQuestionRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('question_text')) {
+            $this->merge([
+                'question_text' => clean($this->input('question_text')),
+            ]);
+        }
+
+        if ($this->has('explanation')) {
+            $this->merge([
+                'explanation' => clean($this->input('explanation')),
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

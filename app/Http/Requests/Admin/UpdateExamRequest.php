@@ -14,6 +14,15 @@ class UpdateExamRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('description')) {
+            $this->merge([
+                'description' => clean($this->input('description')),
+            ]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *

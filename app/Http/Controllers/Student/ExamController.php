@@ -7,6 +7,7 @@ use App\Models\Exam;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,6 +34,8 @@ class ExamController extends Controller
 
     public function room(Exam $exam): Response
     {
+        Gate::authorize('view', $exam);
+
         $exam->load([
             'questions.question.options',
             'questions.question' => function ($q) {
@@ -58,6 +61,8 @@ class ExamController extends Controller
 
     public function attempt(Request $request, Exam $exam)
     {
+        Gate::authorize('attempt', $exam);
+
         // Logic to submit the exam attempt
         // Evaluation Job is dispatched here based on implementation plan
         // ...

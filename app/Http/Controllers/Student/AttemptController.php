@@ -7,6 +7,7 @@ use App\Models\ExamAttempt;
 use App\Models\StudentAnswer;
 use App\Jobs\EvaluateExamAttempt;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
 class AttemptController extends Controller
@@ -16,10 +17,7 @@ class AttemptController extends Controller
      */
     public function saveAnswer(Request $request, ExamAttempt $attempt)
     {
-        // Security check
-        if ($attempt->user_id !== auth()->id() || $attempt->is_completed) {
-            return response()->json(['message' => 'Unauthorized or exam already completed.'], 403);
-        }
+        Gate::authorize('update', $attempt);
 
         $validated = $request->validate([
             'question_id' => 'required|uuid|exists:questions,id',
@@ -44,9 +42,7 @@ class AttemptController extends Controller
      */
     public function submit(Request $request, ExamAttempt $attempt)
     {
-        if ($attempt->user_id !== auth()->id() || $attempt->is_completed) {
-            return redirect()->route('student.exams.index')->with('error', 'Unauthorized or already submitted.');
-        }
+        Gate::authorize('update', $attempt);
 
         $attempt->update([
             'is_completed' => true,

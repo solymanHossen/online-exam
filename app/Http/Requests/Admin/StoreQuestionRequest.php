@@ -14,6 +14,25 @@ class StoreQuestionRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $options = $this->input('options', []);
+
+        if (is_array($options)) {
+            foreach ($options as $key => $option) {
+                if (isset($option['option_text'])) {
+                    $options[$key]['option_text'] = clean($option['option_text']);
+                }
+            }
+        }
+
+        $this->merge([
+            'question_text' => $this->has('question_text') ? clean($this->input('question_text')) : null,
+            'explanation' => $this->has('explanation') ? clean($this->input('explanation')) : null,
+            'options' => $options,
+        ]);
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
