@@ -39,8 +39,8 @@ abstract class BaseRepository
         return $model->update($data);
     }
 
-    public function delete(Model $model): ?bool
+    public function delete(Model $model): bool
     {
-        return $model->delete();
+        return (bool) $model->delete();
     }
 }
