@@ -24,10 +24,10 @@ class PaymentController extends Controller
         $this->paymentService = $paymentService;
     }
 
-    public function index(): Response
+    public function index(Request $request): Response
     {
         // Get paginated payments scoped to the authenticated user
-        $payments = Payment::where('user_id', Auth::id())->latest()->paginate(15);
+        $payments = tap($request->user())->payments()->latest()->paginate(15);
 
         return Inertia::render('Student/PaymentsHistory', [
             'payments' => PaymentResource::collection($payments),

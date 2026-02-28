@@ -22,7 +22,7 @@ class LocalizationController extends Controller
         // $supportedLocales = ['en', 'es', 'ar'];
         // if (!in_array($locale, $supportedLocales)) { abort(400); }
 
-        session()->put('locale', $locale);
+        $request->session()->put('locale', $locale);
         App::setLocale($locale);
 
         return back();

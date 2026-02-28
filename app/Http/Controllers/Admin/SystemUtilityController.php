@@ -25,8 +25,8 @@ class SystemUtilityController extends Controller
     public function index(): Response
     {
         return Inertia::render('Admin/Settings/SystemUtilities', [
-            'queueConnection' => env('QUEUE_CONNECTION', 'sync'),
-            'appDebug' => env('APP_DEBUG', false),
+            'queueConnection' => config('queue.default', 'sync'),
+            'appDebug' => config('app.debug', false),
         ]);
     }
 
@@ -40,7 +40,7 @@ class SystemUtilityController extends Controller
 
             return response()->json(['message' => 'Storage link created successfully.']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create storage link: '.$e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to create storage link: ' . $e->getMessage()], 500);
         }
     }
 
@@ -54,7 +54,7 @@ class SystemUtilityController extends Controller
 
             return response()->json(['message' => 'All caches cleared successfully.']);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to clear caches: '.$e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to clear caches: ' . $e->getMessage()], 500);
         }
     }
 
@@ -91,7 +91,7 @@ class SystemUtilityController extends Controller
 
             return response()->json(['message' => 'Queue processed successfully.', 'output' => $output]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to process queue: '.$e->getMessage()], 500);
+            return response()->json(['message' => 'Failed to process queue: ' . $e->getMessage()], 500);
         }
     }
 }
