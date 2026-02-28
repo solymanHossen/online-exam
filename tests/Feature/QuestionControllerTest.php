@@ -91,7 +91,7 @@ class QuestionControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.questions.index'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Questions/Index')
                 ->has('questions.data', 5) // Check pagination structure 'data' array has 5 items
                 ->has('questions.links')   // Verify pagination links exist
@@ -103,7 +103,7 @@ class QuestionControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.questions.create'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Questions/Form')
         );
     }
@@ -199,7 +199,7 @@ class QuestionControllerTest extends TestCase
         // Assert DB Isolation Integrity
         $this->assertDatabaseCount('questions', 1);
         $this->assertDatabaseHas('questions', [
-            'question_text' => 'What is 2 + 2?',
+            'question_text' => '<p>What is 2 + 2?</p>',
             'difficulty' => 'easy',
             'marks' => 5,
             'negative_marks' => 0.5,
@@ -207,7 +207,7 @@ class QuestionControllerTest extends TestCase
 
         $this->assertDatabaseCount('question_options', 2);
         $this->assertDatabaseHas('question_options', [
-            'option_text' => '4',
+            'option_text' => '<p>4</p>',
             'is_correct' => true, // DB casts boolean correctly
         ]);
     }
@@ -268,7 +268,7 @@ class QuestionControllerTest extends TestCase
 
         $this->assertDatabaseHas('questions', [
             'id' => $question->id,
-            'question_text' => 'New Completely Updated Text',
+            'question_text' => '<p>New Completely Updated Text</p>',
             'marks' => 10,
             'difficulty' => 'hard',
         ]);
@@ -293,7 +293,7 @@ class QuestionControllerTest extends TestCase
 
         $response->assertRedirect(route('admin.questions.index'));
 
-        $this->assertDatabaseMissing('questions', [
+        $this->assertSoftDeleted('questions', [
             'id' => $question->id,
         ]);
     }

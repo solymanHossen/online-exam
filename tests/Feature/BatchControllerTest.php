@@ -92,7 +92,7 @@ class BatchControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.batches.index'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Batches/Index')
                 ->has('batches.data', 5) // Check pagination structure 'data' array has 5 items
         );
@@ -214,7 +214,7 @@ class BatchControllerTest extends TestCase
         $response->assertRedirect(route('admin.batches.index'));
         $response->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('batches', [
+        $this->assertSoftDeleted('batches', [
             'id' => $batch->id,
         ]);
     }

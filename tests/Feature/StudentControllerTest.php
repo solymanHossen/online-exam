@@ -92,7 +92,7 @@ class StudentControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.students.index'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Students/Index')
                 // Using students structure as passed to the view
                 ->has('students.data', 5)
@@ -211,7 +211,7 @@ class StudentControllerTest extends TestCase
         $response->assertRedirect(route('admin.students.index'));
         $response->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('students', [
+        $this->assertSoftDeleted('students', [
             'id' => $student->id,
         ]);
     }

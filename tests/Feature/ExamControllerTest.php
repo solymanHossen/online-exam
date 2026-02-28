@@ -92,7 +92,7 @@ class ExamControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.exams.index'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Exams/Index')
                 ->has('exams.data', 5)
         );
@@ -103,7 +103,7 @@ class ExamControllerTest extends TestCase
         $response = $this->actingAs($this->admin)->get(route('admin.exams.create'));
 
         $response->assertInertia(
-            fn (AssertableInertia $page) => $page
+            fn(AssertableInertia $page) => $page
                 ->component('Admin/Exams/Builder')
         );
     }
@@ -233,7 +233,7 @@ class ExamControllerTest extends TestCase
         $response->assertRedirect(route('admin.exams.index'));
         $response->assertSessionHas('success');
 
-        $this->assertDatabaseMissing('exams', [
+        $this->assertSoftDeleted('exams', [
             'id' => $exam->id,
         ]);
     }

@@ -80,7 +80,7 @@ class AttemptControllerTest extends TestCase
         $response = $this->actingAs($user)->post(route('student.attempts.submit', $attempt->id));
 
         $response->assertRedirect(route('student.exams.index'));
-        $response->assertSessionHas('error', 'Unauthorized or already submitted.');
+        $response->assertSessionHas('error', 'Exam is already submitted.');
 
         Queue::assertNotPushed(EvaluateExamAttempt::class);
     }
@@ -103,8 +103,7 @@ class AttemptControllerTest extends TestCase
 
         $response = $this->actingAs($stranger)->post(route('student.attempts.submit', $attempt->id));
 
-        $response->assertRedirect(route('student.exams.index'));
-        $response->assertSessionHas('error');
+        $response->assertStatus(403);
 
         $attempt->refresh();
         $this->assertFalse($attempt->is_completed);

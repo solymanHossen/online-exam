@@ -42,7 +42,7 @@ class AttemptController extends Controller
      */
     public function submit(Request $request, ExamAttempt $attempt)
     {
-        Gate::authorize('update', $attempt);
+        Gate::authorize('view', $attempt);
 
         // Task 1: Prevent Race Conditions (Double Submission) using Atomic Locks
         $lock = Cache::lock("submit_exam_attempt_{$attempt->id}", 10);
