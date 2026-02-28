@@ -53,18 +53,18 @@ class EvaluateExamAttempt implements ShouldQueue
                 $selectedOption = $answer->selectedOption;
 
                 if (!$selectedOption) {
-                    $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
+                    $answer->forceFill(['is_correct' => false, 'marks_awarded' => 0])->save();
                     continue;
                 }
 
                 $isCorrect = $selectedOption->is_correct;
                 if ($isCorrect) {
                     $marks = $question->marks;
-                    $answer->update(['is_correct' => true, 'marks_awarded' => $marks]);
+                    $answer->forceFill(['is_correct' => true, 'marks_awarded' => $marks])->save();
                     $totalScore += $marks;
                 } else {
                     $negativeMarks = $exam->negative_enabled ? $question->negative_marks : 0;
-                    $answer->update(['is_correct' => false, 'marks_awarded' => -$negativeMarks]);
+                    $answer->forceFill(['is_correct' => false, 'marks_awarded' => -$negativeMarks])->save();
                     $totalScore -= $negativeMarks;
                 }
 
