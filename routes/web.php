@@ -143,7 +143,7 @@ Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->gr
 
     // Manages the logic during an active exam (saving answers dynamically and final submission)
     Route::controller(AttemptController::class)->prefix('attempts')->name('attempts.')->group(function () {
-        Route::post('/{attempt}/save-answer', 'saveAnswer')->name('save-answer');
+        Route::post('/{attempt}/save-answer', 'saveAnswer')->middleware('throttle:60,1')->name('save-answer');
         Route::post('/{attempt}/submit', 'submit')->name('submit');
     });
 
