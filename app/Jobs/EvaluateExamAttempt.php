@@ -12,6 +12,21 @@ class EvaluateExamAttempt implements ShouldQueue
 {
     use Queueable;
 
+    /**
+     * Set a timeout to prevent the job from hanging on Redis
+     */
+    public $timeout = 120;
+
+    /**
+     * Tell Laravel to retry the job 3 times before failing
+     */
+    public $tries = 3;
+
+    /**
+     * Delete the job if the ExamAttempt was somehow deleted
+     */
+    public $deleteWhenMissingModels = true;
+
     protected ExamAttempt $attempt;
 
     /**
@@ -24,44 +39,48 @@ class EvaluateExamAttempt implements ShouldQueue
 
     public function handle(): void
     {
-        $attempt = $this->attempt->load(['exam', 'answers.question', 'answers.selectedOption']);
+        $this->attempt->load(['exam']);
+        $exam = $this->attempt->exam;
+        $attempt = $this->attempt;
 
         $totalScore = 0;
         $statsUpdates = [];
 
-        foreach ($attempt->answers as $answer) {
-            $question = $answer->question;
-            $selectedOption = $answer->selectedOption;
+        // 🚨 CodeCanyon Fix: Process answers in chunks of 500 to prevent memory exhaustion
+        $this->attempt->answers()->with(['question', 'selectedOption'])->chunk(500, function ($answers) use (&$totalScore, &$statsUpdates, $exam) {
+            foreach ($answers as $answer) {
+                $question = $answer->question;
+                $selectedOption = $answer->selectedOption;
 
-            if (! $selectedOption) {
-                $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
+                if (!$selectedOption) {
+                    $answer->update(['is_correct' => false, 'marks_awarded' => 0]);
+                    continue;
+                }
 
-                continue;
-            }
+                $isCorrect = $selectedOption->is_correct;
+                if ($isCorrect) {
+                    $marks = $question->marks;
+                    $answer->update(['is_correct' => true, 'marks_awarded' => $marks]);
+                    $totalScore += $marks;
+                } else {
+                    $negativeMarks = $exam->negative_enabled ? $question->negative_marks : 0;
+                    $answer->update(['is_correct' => false, 'marks_awarded' => -$negativeMarks]);
+                    $totalScore -= $negativeMarks;
+                }
 
-            $isCorrect = $selectedOption->is_correct;
-            if ($isCorrect) {
-                $marks = $question->marks;
-                $answer->update(['is_correct' => true, 'marks_awarded' => $marks]);
-                $totalScore += $marks;
-            } else {
-                $negativeMarks = $attempt->exam->negative_enabled ? $question->negative_marks : 0;
-                $answer->update(['is_correct' => false, 'marks_awarded' => -$negativeMarks]);
-                $totalScore -= $negativeMarks;
+                // Aggregate Statistics in memory to prevent N+1 Database Writes
+                if (!isset($statsUpdates[$question->id])) {
+                    $statsUpdates[$question->id] = ['attempted' => 0, 'correct' => 0];
+                }
+                $statsUpdates[$question->id]['attempted'] += 1;
+                if ($isCorrect) {
+                    $statsUpdates[$question->id]['correct'] += 1;
+                }
             }
-
-            // Aggregate Statistics in memory to prevent N+1 Database Writes
-            if (! isset($statsUpdates[$question->id])) {
-                $statsUpdates[$question->id] = ['attempted' => 0, 'correct' => 0];
-            }
-            $statsUpdates[$question->id]['attempted'] += 1;
-            if ($isCorrect) {
-                $statsUpdates[$question->id]['correct'] += 1;
-            }
-        }
+        });
 
         // Bulk Upsert Statistics in a single optimized query
-        if (! empty($statsUpdates)) {
+        if (!empty($statsUpdates)) {
             $dbStats = QuestionStatistic::whereIn('question_id', array_keys($statsUpdates))->get()->keyBy('question_id');
 
             foreach ($statsUpdates as $qId => $data) {
