@@ -8,6 +8,18 @@ use App\Models\User;
 class StudentPolicy
 {
     /**
+     * Perform pre-authorization checks.
+     */
+    public function before(User $user, string $ability): ?bool
+    {
+        if (strtolower($user->role?->name ?? '') === 'admin') {
+            return true;
+        }
+
+        return null; // Fall through to specific methods
+    }
+
+    /**
      * Determine whether the user can view any models.
      */
     public function viewAny(User $user): bool
@@ -20,7 +32,7 @@ class StudentPolicy
      */
     public function view(User $user, Student $student): bool
     {
-        return false;
+        return $user->id === $student->user_id;
     }
 
     /**
@@ -36,7 +48,7 @@ class StudentPolicy
      */
     public function update(User $user, Student $student): bool
     {
-        return false;
+        return $user->id === $student->user_id;
     }
 
     /**
