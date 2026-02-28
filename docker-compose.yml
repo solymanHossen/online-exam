@@ -1,20 +1,28 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: 'mysql:8.0'
     container_name: online_exam_db
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-online_exam}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - '${FORWARD_DB_PORT:-3306}:3306'
+    environment:
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_HOST: '%'
+      MYSQL_DATABASE: '${DB_DATABASE:-online_exam}'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 1
     volumes:
-      - online_exam_pg_data:/var/lib/postgresql/data
+      - 'online_exam_mysql_data:/var/lib/mysql'
     networks:
       - online_exam_network
+    healthcheck:
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - '-p${DB_PASSWORD}'
+      retries: 3
+      timeout: 5s
 
   redis:
     image: redis:alpine
@@ -38,7 +46,7 @@ services:
       - online_exam_network
 
 volumes:
-  online_exam_pg_data:
+  online_exam_mysql_data:
   online_exam_redis_data:
 
 

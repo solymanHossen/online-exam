@@ -43,7 +43,7 @@ class DatabaseSeeder extends Seeder
         );
 
         // 3. Batches & Subjects
-        $batch = Batch::firstOrCreate(['name' => '2026 CodeCanyon Demo Batch']);
+        $batch = Batch::firstOrCreate(['name' => '2026 CodeCanyon Demo Batch', 'class_level' => 'Grade 12']);
         $subject = Subject::factory()->create(['name' => 'General Knowledge']);
         $chapter = Chapter::factory()->create(['subject_id' => $subject->id, 'name' => 'Demo Chapter']);
 
