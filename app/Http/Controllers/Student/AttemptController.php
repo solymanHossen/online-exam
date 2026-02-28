@@ -17,6 +17,7 @@ class AttemptController extends Controller
      */
     public function saveAnswer(Request $request, ExamAttempt $attempt)
     {
+        abort_if($attempt->user_id !== auth()->id(), 403, 'Unauthorized access to this exam attempt.');
         Gate::authorize('update', $attempt);
 
         $validated = $request->validate([
@@ -42,6 +43,7 @@ class AttemptController extends Controller
      */
     public function submit(Request $request, ExamAttempt $attempt)
     {
+        abort_if($attempt->user_id !== auth()->id(), 403, 'Unauthorized access to this exam attempt.');
         Gate::authorize('view', $attempt);
 
         // Task 1: Prevent Race Conditions (Double Submission) using Atomic Locks

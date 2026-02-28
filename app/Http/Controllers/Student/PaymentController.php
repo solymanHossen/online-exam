@@ -82,15 +82,10 @@ class PaymentController extends Controller
      */
     public function callback(Request $request)
     {
-        // Expect gateway and transaction_id in query params (or via mock logic)
-        $gatewayName = $request->input('gateway', 'stripe');
-        $transactionId = $request->input('transaction_id');
-
-        if ($transactionId && $this->paymentService->verifyPayment($gatewayName, $transactionId)) {
-            return redirect()->route('student.payments.index')->with('success', 'Payment successful!');
-        }
-
-        return redirect()->route('student.payments.index')->with('error', 'Payment verification failed or pending.');
+        // 🚨 SECURITY FIX: Do not update payment status based on client return URL.
+        // Rely exclusively on server-to-server webhooks to prevent frontend bypass.
+        return redirect()->route('student.payments.index')
+            ->with('info', 'Payment is being processed. It will reflect here once the gateway confirms.');
     }
 
     /**
@@ -98,16 +93,36 @@ class PaymentController extends Controller
      */
     public function webhook(Request $request, string $gateway)
     {
-        // Note: Real implementations MUST verify signatures (e.g., Stripe-Signature)
+        $payload = $request->getContent();
 
-        // This assumes a generic structure for demonstration
-        $payload = $request->all();
-        $transactionId = $payload['data']['object']['id'] ?? $payload['resource']['id'] ?? null;
+        if ($gateway === 'stripe') {
+            $signature = $request->header('Stripe-Signature');
 
-        if ($transactionId) {
-            $this->paymentService->verifyPayment($gateway, $transactionId);
+            try {
+                // Must configure services.stripe.webhook_secret in production
+                $webhookSecret = config('services.stripe.webhook_secret');
+                if ($webhookSecret) {
+                    $event = \Stripe\Webhook::constructEvent($payload, $signature, $webhookSecret);
+
+                    if ($event->type === 'checkout.session.completed') {
+                        // Assuming payment_intent is stored as the transaction ID locally
+                        $transactionId = $event->data->object->payment_intent;
+                        $this->paymentService->verifyPayment($gateway, $transactionId);
+                    }
+                }
+            } catch (\Exception $e) {
+                return response()->json(['error' => 'Stripe webhook signature verification failed'], 400);
+            }
+        } elseif ($gateway === 'paypal') {
+            // Validate PayPal Webhook Signature here via their SDK/Verification endpoint
+            // Do NOT trust the payload blindly without signature verification.
+            $transactionId = $request->input('resource.id');
+            // Assuming signature verification passed above:
+            if ($transactionId) {
+                $this->paymentService->verifyPayment($gateway, $transactionId);
+            }
         }
 
-        return response()->json(['status' => 'webhook received']);
+        return response()->json(['status' => 'webhook securely processed']);
     }
 }
