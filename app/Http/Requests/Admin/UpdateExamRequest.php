@@ -38,7 +38,8 @@ class UpdateExamRequest extends FormRequest
             'pass_marks' => 'sometimes|required|integer|min:0|lte:total_marks',
             'status' => 'sometimes|required|string|in:draft,published,archived',
             'start_time' => 'sometimes|required|date',
-            'end_time' => 'sometimes|required|date|after:start_time',
+            // Fix: require start_time if end_time is present, otherwise 'after:start_time' will fail on partial PUT/PATCH requests
+            'end_time' => 'sometimes|required_with:start_time|date|after:start_time',
         ];
     }
 }
