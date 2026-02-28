@@ -5,15 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStudentRequest;
 use App\Http\Requests\Admin\UpdateStudentRequest;
-use App\Models\Role;
 use App\Models\Student;
 use App\Services\StudentService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,6 +27,8 @@ class StudentController extends Controller
 
     public function index(): Response
     {
+        Gate::authorize('viewAny', Student::class);
+
         // Optimized: Assuming getPaginatedStudents handles eager loading.
         $students = $this->studentService->getPaginatedStudents(15);
 
@@ -40,39 +39,16 @@ class StudentController extends Controller
 
     public function store(StoreStudentRequest $request): RedirectResponse
     {
+        Gate::authorize('create', Student::class);
+
         $data = $request->validated();
 
         try {
-            DB::beginTransaction();
-
-            // Performance: Caching role ID to avoid DB query on every registration and removed LOWER() for index hit
-            $roleId = Cache::rememberForever('role_student_id', function () {
-                return Role::where('name', 'student')->value('id');
-            });
-
-            $userData = [
-                'name' => $data['name'],
-                'email' => $data['email'],
-                // Security Fix: Explicitly hash password at boundary. Prevent raw string persistence.
-                'password' => Hash::make($data['password']),
-                'role_id' => $roleId,
-            ];
-
-            $studentData = [
-                'batch_id' => $data['batch_id'],
-                'roll_number' => $data['roll_number'],
-                'admission_date' => $data['admission_date'],
-                'status' => $data['status'] ?? 'active',
-            ];
-
-            $this->studentService->registerStudent($userData, $studentData);
-
-            DB::commit();
+            $this->studentService->registerStudent($data);
 
             // Architecture Fix: Translation readiness added
             return redirect()->route('admin.students.index')->with('success', __('Student registered successfully.'));
         } catch (\Throwable $e) {
-            DB::rollBack();
             Log::error('Student Registration Failed: ' . $e->getMessage(), ['exception' => $e]);
             return back()->with('error', __('Failed to register student. Please check input and try again.'));
         }
@@ -80,6 +56,8 @@ class StudentController extends Controller
 
     public function update(UpdateStudentRequest $request, Student $student): RedirectResponse
     {
+        Gate::authorize('update', $student);
+
         try {
             // Note: If request contains User data (email, name), it requires dedicated handling.
             // Currently updating Student model specifics safely through validated array.
@@ -94,18 +72,15 @@ class StudentController extends Controller
 
     public function destroy(Student $student): RedirectResponse
     {
-        try {
-            DB::beginTransaction();
+        Gate::authorize('delete', $student);
 
+        try {
             // Delete associated User entity before student if DB cascading is not configured.
             // Assuming DB foreign keys onDelete('cascade') exist, but added try/catch for robust handling.
             $student->delete();
 
-            DB::commit();
-
             return redirect()->route('admin.students.index')->with('success', __('Student deleted successfully.'));
         } catch (\Throwable $e) {
-            DB::rollBack();
             Log::error('Student Deletion Failed: ' . $e->getMessage(), ['exception' => $e]);
             return back()->with('error', __('Failed to delete student.'));
         }

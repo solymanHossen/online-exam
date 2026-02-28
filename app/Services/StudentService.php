@@ -2,11 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Role;
 use App\Models\Student;
 use App\Models\User;
 use App\Repositories\StudentRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -30,14 +32,29 @@ class StudentService extends BaseService
     /**
      * Register a new student and their corresponding user record safely.
      */
-    public function registerStudent(array $userData, array $studentData): Student
+    public function registerStudent(array $data): Student
     {
-        return DB::transaction(function () use ($userData, $studentData) {
-            $userData['password'] = Hash::make($userData['password']);
+        return DB::transaction(function () use ($data) {
+            $roleId = Cache::rememberForever('role_student_id', function () {
+                return Role::where('name', 'student')->value('id');
+            });
+
+            $userData = [
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => Hash::make($data['password']),
+                'role_id' => $roleId,
+            ];
 
             $user = $this->userRepository->create($userData);
 
-            $studentData['user_id'] = $user->id;
+            $studentData = [
+                'user_id' => $user->id,
+                'batch_id' => $data['batch_id'],
+                'roll_number' => $data['roll_number'],
+                'admission_date' => $data['admission_date'],
+                'status' => $data['status'] ?? 'active',
+            ];
 
             return $this->studentRepository->create($studentData);
         });

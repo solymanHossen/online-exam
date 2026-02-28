@@ -41,7 +41,7 @@ class ExamService extends BaseService
             return $this->examRepository->create($data);
         } catch (\Throwable $e) {
             Log::error('Failed to create exam: ' . $e->getMessage(), ['exception' => $e]);
-            throw new \RuntimeException(__('Failed to create exam. Please check your data and try again.'));
+            throw new \RuntimeException(__('Failed to create exam. Please check your data and try again.'), 0, $e);
         }
     }
 
@@ -58,12 +58,12 @@ class ExamService extends BaseService
             return $this->examRepository->update($exam, $data);
         } catch (\Throwable $e) {
             Log::error('Failed to update exam: ' . $e->getMessage(), ['exception' => $e]);
-            throw new \RuntimeException(__('Failed to update exam. Please try again later.'));
+            throw new \RuntimeException(__('Failed to update exam. Please try again later.'), 0, $e);
         }
     }
 
     /**
-     * Attach a specific set of questions to an exam manually using bulk insert chunks.
+     * Attach a specific set of questions to an exam manually.
      *
      * @param Exam $exam
      * @param array<int, string> $questionIds Array of UUIDs of questions
@@ -73,35 +73,27 @@ class ExamService extends BaseService
     {
         try {
             DB::transaction(function () use ($exam, $questionIds) {
-                // First clear existing
-                $exam->questions()->delete();
-
-                $examQuestions = [];
+                $syncData = [];
                 $timestamp = now();
 
                 foreach ($questionIds as $index => $qId) {
-                    $examQuestions[] = [
+                    $syncData[$qId] = [
                         'id' => (string) Str::uuid(),
-                        'exam_id' => $exam->id,
-                        'question_id' => $qId,
                         'question_order' => $index + 1,
                         'created_at' => $timestamp,
                         'updated_at' => $timestamp,
                     ];
                 }
 
-                // Chunk the bulk insert to prevent hitting database binding limits on massive arrays
-                foreach (array_chunk($examQuestions, 500) as $chunk) {
-                    $exam->questions()->insert($chunk);
-                }
+                $exam->questions()->sync($syncData);
 
-                // Optionally, update exam total marks based on attached questions
-                $totalMarks = Question::whereIn('id', $questionIds)->sum('marks');
+                // Update exam total marks based on attached questions
+                $totalMarks = DB::table('questions')->whereIn('id', $questionIds)->sum('marks');
                 $exam->update(['total_marks' => $totalMarks]);
             });
         } catch (\Throwable $e) {
             Log::error('Failed to attach questions to exam: ' . $e->getMessage(), ['exception' => $e]);
-            throw new \RuntimeException(__('Failed to attach questions to the exam. Please try again.'));
+            throw new \RuntimeException(__('Failed to attach questions to the exam. Please try again.'), 0, $e);
         }
     }
 
@@ -117,7 +109,7 @@ class ExamService extends BaseService
             return $exam->delete();
         } catch (\Throwable $e) {
             Log::error('Failed to delete exam: ' . $e->getMessage(), ['exception' => $e]);
-            throw new \RuntimeException(__('Failed to delete exam. It could be in use.'));
+            throw new \RuntimeException(__('Failed to delete exam. It could be in use.'), 0, $e);
         }
     }
 }

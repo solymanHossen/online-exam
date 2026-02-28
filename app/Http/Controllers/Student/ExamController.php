@@ -31,11 +31,13 @@ class ExamController extends Controller
 
     public function index(): Response
     {
-        // Fetch active exams for the student's batch
-        $exams = Exam::active()->latest()->paginate(15);
+        Gate::authorize('viewAny', Exam::class);
+
+        // Fetch active exams for the student's batch via repository
+        $exams = $this->examRepository->getActiveExamsPaginated(15);
 
         return Inertia::render('Student/ExamsList', [
-            'exams' => $exams,
+            'exams' => ExamResource::collection($exams),
         ]);
     }
 
@@ -61,16 +63,5 @@ class ExamController extends Controller
             'exam' => new ExamResource($optimizedExam),
             'attempt' => new ExamAttemptResource($attempt),
         ]);
-    }
-
-    public function attempt(Request $request, Exam $exam)
-    {
-        Gate::authorize('attempt', $exam);
-
-        // Logic to submit the exam attempt
-        // Evaluation Job is dispatched here based on implementation plan
-        // ...
-
-        return redirect()->route('student.exams.index')->with('success', 'Exam submitted successfully.');
     }
 }

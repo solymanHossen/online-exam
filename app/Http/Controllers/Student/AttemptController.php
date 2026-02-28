@@ -9,6 +9,7 @@ use App\Models\StudentAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class AttemptController extends Controller
 {
@@ -17,12 +18,25 @@ class AttemptController extends Controller
      */
     public function saveAnswer(Request $request, ExamAttempt $attempt)
     {
-        abort_if($attempt->user_id !== auth()->id(), 403, 'Unauthorized access to this exam attempt.');
         Gate::authorize('update', $attempt);
 
+        abort_if(
+            $attempt->is_completed || now()->greaterThan($attempt->end_time),
+            403,
+            __('You cannot modify answers for a completed or expired exam attempt.')
+        );
+
         $validated = $request->validate([
-            'question_id' => 'required|uuid|exists:questions,id',
-            'selected_option_id' => 'required|uuid|exists:question_options,id',
+            'question_id' => [
+                'required',
+                'uuid',
+                Rule::exists('questions', 'id')->where('exam_id', $attempt->exam_id),
+            ],
+            'selected_option_id' => [
+                'required',
+                'uuid',
+                Rule::exists('question_options', 'id')->where('question_id', $request->question_id),
+            ],
         ]);
 
         StudentAnswer::updateOrCreate(
@@ -35,7 +49,7 @@ class AttemptController extends Controller
             ]
         );
 
-        return response()->json(['message' => 'Answer saved successfully.']);
+        return response()->json(['message' => __('Answer saved successfully.')]);
     }
 
     /**
@@ -43,7 +57,6 @@ class AttemptController extends Controller
      */
     public function submit(Request $request, ExamAttempt $attempt)
     {
-        abort_if($attempt->user_id !== auth()->id(), 403, 'Unauthorized access to this exam attempt.');
         Gate::authorize('view', $attempt);
 
         // Task 1: Prevent Race Conditions (Double Submission) using Atomic Locks
@@ -52,7 +65,7 @@ class AttemptController extends Controller
         if ($lock->get()) {
             try {
                 if ($attempt->is_completed) {
-                    return redirect()->route('student.exams.index')->with('error', 'Exam is already submitted.');
+                    return redirect()->route('student.exams.index')->with('error', __('Exam is already submitted.'));
                 }
 
                 $attempt->update([
@@ -63,12 +76,12 @@ class AttemptController extends Controller
                 // Dispatch background job to evaluate
                 EvaluateExamAttempt::dispatch($attempt);
 
-                return redirect()->route('student.exams.index')->with('success', 'Exam submitted successfully! Your results will be available shortly.');
+                return redirect()->route('student.exams.index')->with('success', __('Exam submitted successfully! Your results will be available shortly.'));
             } finally {
                 $lock->release();
             }
         }
 
-        return redirect()->route('student.exams.index')->with('error', 'Submission is already in progress, please wait.');
+        return redirect()->route('student.exams.index')->with('error', __('Submission is already in progress, please wait.'));
     }
 }

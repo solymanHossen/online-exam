@@ -10,6 +10,7 @@ use App\Models\Exam;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -26,6 +27,8 @@ class ExamController extends Controller
 
     public function index(): Response
     {
+        Gate::authorize('viewAny', Exam::class);
+
         // Load with batch, etc via service repository
         $exams = $this->examService->getPaginatedExams(15);
 
@@ -37,11 +40,15 @@ class ExamController extends Controller
 
     public function create(): Response
     {
+        Gate::authorize('create', Exam::class);
+
         return Inertia::render('Admin/Exams/Builder');
     }
 
     public function store(StoreExamRequest $request): RedirectResponse
     {
+        Gate::authorize('create', Exam::class);
+
         $examData = $request->validated();
         $examData['created_by'] = auth()->id();
 
@@ -52,6 +59,8 @@ class ExamController extends Controller
 
     public function update(UpdateExamRequest $request, Exam $exam): RedirectResponse
     {
+        Gate::authorize('update', $exam);
+
         $this->examService->updateExam($exam, $request->validated());
 
         return redirect()->route('admin.exams.index')->with('success', __('Exam updated successfully.'));
@@ -59,6 +68,8 @@ class ExamController extends Controller
 
     public function destroy(Exam $exam): RedirectResponse
     {
+        Gate::authorize('delete', $exam);
+
         $this->examService->deleteExam($exam);
 
         return redirect()->route('admin.exams.index')->with('success', __('Exam deleted successfully.'));
