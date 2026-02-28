@@ -17,6 +17,7 @@ use App\Models\Subject;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -30,115 +31,136 @@ class DatabaseSeeder extends Seeder
         $teacherRole = Role::firstOrCreate(['name' => 'Teacher']);
         $studentRole = Role::firstOrCreate(['name' => 'Student']);
 
-        // 2. Users (Admin & Teachers)
-        $adminUser = User::factory()->create([
-            'role_id' => $adminRole->id,
-            'name' => 'System Admin',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-        ]);
+        // 2. Admin User
+        $adminUser = User::updateOrCreate(
+            ['email' => 'admin@example.com'],
+            [
+                'role_id' => $adminRole->id,
+                'name' => 'System Admin',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
 
-        $teachers = User::factory(5)->create([
-            'role_id' => $teacherRole->id,
-            'password' => Hash::make('password'),
-        ]);
+        // 3. Batches & Subjects
+        $batch = Batch::firstOrCreate(['name' => '2026 CodeCanyon Demo Batch']);
+        $subject = Subject::factory()->create(['name' => 'General Knowledge']);
+        $chapter = Chapter::factory()->create(['subject_id' => $subject->id, 'name' => 'Demo Chapter']);
 
-        // 3. Batches
-        $batches = Batch::factory(3)->create();
-
-        // 4. Subjects & Chapters & Questions
-        $subjects = Subject::factory(15)->create(); // Spread across conceptual batches
-        $allQuestions = collect();
-
-        foreach ($subjects as $subject) {
-            $chapters = Chapter::factory(3)->create([
+        // 4. Generate EXACTLY 50 Questions with Options
+        $questions = collect();
+        for ($i = 0; $i < 50; $i++) {
+            $question = Question::factory()->create([
                 'subject_id' => $subject->id,
-            ]);
-
-            foreach ($chapters as $chapter) {
-                $questions = Question::factory(10)->create([
-                    'subject_id' => $subject->id,
-                    'chapter_id' => $chapter->id,
-                    'created_by' => $teachers->random()->id,
-                ]);
-
-                foreach ($questions as $question) {
-                    $allQuestions->push($question);
-
-                    // Options: 1 correct, 3 incorrect
-                    QuestionOption::factory(1)->correct()->create([
-                        'question_id' => $question->id,
-                    ]);
-                    QuestionOption::factory(3)->incorrect()->create([
-                        'question_id' => $question->id,
-                    ]);
-                }
-            }
-        }
-
-        // 5. Exams
-        $exams = collect();
-        foreach ($batches as $batch) {
-            $batchExams = Exam::factory(2)->published()->create([
-                'batch_id' => $batch->id,
+                'chapter_id' => $chapter->id,
                 'created_by' => $adminUser->id,
+                'question_text' => "Sample Demo Question #" . ($i + 1) . " for CodeCanyon Testing.",
+                'marks' => 2,
+                'negative_marks' => 0.5,
             ]);
 
-            foreach ($batchExams as $exam) {
-                $randomQuestions = $allQuestions->random(10);
-                foreach ($randomQuestions as $rq) {
-                    ExamQuestion::firstOrCreate([
-                        'exam_id' => $exam->id,
-                        'question_id' => $rq->id,
-                    ]);
-                }
-                $exams->push($exam);
+            // Create 1 correct, 3 incorrect options
+            QuestionOption::factory()->correct()->create(['question_id' => $question->id, 'option_text' => 'Correct Option A']);
+            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option B']);
+            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option C']);
+            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option D']);
+
+            $questions->push($question);
+        }
+
+        // 5. Generate EXACTLY 3 Exams (Past, Active, Upcoming)
+        $exams = collect();
+
+        // Active Exam (Live Now)
+        $exams->push(Exam::factory()->published()->create([
+            'batch_id' => $batch->id,
+            'created_by' => $adminUser->id,
+            'title' => 'Live Demo Assessment',
+            'start_time' => now()->subMinutes(10),
+            'end_time' => now()->addDays(2),
+            'duration_minutes' => 60,
+        ]));
+
+        // Upcoming Exam
+        $exams->push(Exam::factory()->published()->create([
+            'batch_id' => $batch->id,
+            'created_by' => $adminUser->id,
+            'title' => 'Upcoming Final Exam',
+            'start_time' => now()->addDays(1),
+            'end_time' => now()->addDays(5),
+            'duration_minutes' => 120,
+        ]));
+
+        // Past Exam
+        $exams->push(Exam::factory()->published()->create([
+            'batch_id' => $batch->id,
+            'created_by' => $adminUser->id,
+            'title' => 'Completed Mock Test',
+            'start_time' => now()->subDays(5),
+            'end_time' => now()->subDays(3),
+            'duration_minutes' => 45,
+        ]));
+
+        // Attach random questions to exams
+        foreach ($exams as $exam) {
+            $examQuestions = $questions->random(15);
+            $order = 1;
+            foreach ($examQuestions as $eq) {
+                ExamQuestion::firstOrCreate([
+                    'exam_id' => $exam->id,
+                    'question_id' => $eq->id,
+                    'question_order' => $order++,
+                ]);
             }
         }
 
-        // 6. Students
+        // 6. Generate EXACTLY 5 Students
         $students = collect();
-        for ($i = 0; $i < 20; $i++) {
-            $studentUser = User::factory()->create([
-                'role_id' => $studentRole->id,
-                'email' => "student{$i}@example.com",
-            ]);
+        for ($i = 1; $i <= 5; $i++) {
+            $studentUser = User::updateOrCreate(
+                ['email' => "student{$i}@example.com"],
+                [
+                    'role_id' => $studentRole->id,
+                    'name' => "Demo Student {$i}",
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                ]
+            );
 
-            $student = Student::factory()->create([
-                'user_id' => $studentUser->id,
-                'batch_id' => $batches->random()->id,
-            ]);
+            Student::firstOrCreate(
+                ['user_id' => $studentUser->id],
+                ['batch_id' => $batch->id]
+            );
 
-            $students->push($student);
+            $students->push($studentUser);
         }
 
-        // 7. Exam Attempts and Payments
-        foreach ($students as $student) {
-            Payment::factory(random_int(1, 3))->create([
-                'user_id' => $student->user_id,
-            ]);
+        // 7. Seed 1 Completed Attempt for the Past Exam for Student 1 to show results UI
+        $pastExam = $exams->last();
+        $demoStudent1 = $students->first();
 
-            $studentExams = $exams->random(random_int(1, 3));
-            foreach ($studentExams as $exam) {
-                $attempt = ExamAttempt::factory()->completed()->create([
-                    'exam_id' => $exam->id,
-                    'user_id' => $student->user_id,
+        $attempt = ExamAttempt::create([
+            'id' => Str::uuid(),
+            'exam_id' => $pastExam->id,
+            'user_id' => $demoStudent1->id,
+            'start_time' => $pastExam->start_time->addMinutes(5),
+            'end_time' => $pastExam->start_time->addMinutes(45),
+            'is_completed' => true,
+            'total_score' => 20,
+        ]);
+
+        $examQuestions = ExamQuestion::where('exam_id', $pastExam->id)->get();
+        foreach ($examQuestions as $eq) {
+            $options = QuestionOption::where('question_id', $eq->question_id)->get();
+            if ($options->isNotEmpty()) {
+                $selectedOption = $options->random();
+                StudentAnswer::create([
+                    'id' => Str::uuid(),
+                    'exam_attempt_id' => $attempt->id,
+                    'question_id' => $eq->question_id,
+                    'selected_option_id' => $selectedOption->id,
+                    'answer_text' => null,
                 ]);
-
-                $examQuestions = ExamQuestion::where('exam_id', $exam->id)->get();
-                foreach ($examQuestions as $eq) {
-                    $options = QuestionOption::where('question_id', $eq->question_id)->get();
-
-                    if ($options->isNotEmpty()) {
-                        $selectedOption = $options->random();
-                        StudentAnswer::factory()->create([
-                            'exam_attempt_id' => $attempt->id,
-                            'question_id' => $eq->question_id,
-                            'selected_option_id' => random_int(0, 1) ? $selectedOption->id : null,
-                            'is_correct' => $selectedOption->is_correct,
-                        ]);
-                    }
-                }
             }
         }
     }
