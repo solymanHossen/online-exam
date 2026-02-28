@@ -27,12 +27,20 @@ class ExamService extends BaseService
 
     public function createExam(array $data): Exam
     {
-        return $this->examRepository->create($data);
+        try {
+            return $this->examRepository->create($data);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create exam: ' . $e->getMessage());
+        }
     }
 
     public function updateExam(Exam $exam, array $data): bool
     {
-        return $this->examRepository->update($exam, $data);
+        try {
+            return $this->examRepository->update($exam, $data);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to update exam: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -42,28 +50,32 @@ class ExamService extends BaseService
      */
     public function attachQuestions(Exam $exam, array $questionIds): void
     {
-        DB::transaction(function () use ($exam, $questionIds) {
-            // First clear existing
-            $exam->questions()->delete();
+        try {
+            DB::transaction(function () use ($exam, $questionIds) {
+                // First clear existing
+                $exam->questions()->delete();
 
-            $examQuestions = [];
-            foreach ($questionIds as $index => $qId) {
-                $examQuestions[] = [
-                    'id' => (string) Str::uuid(),
-                    'exam_id' => $exam->id,
-                    'question_id' => $qId,
-                    'question_order' => $index + 1,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
+                $examQuestions = [];
+                foreach ($questionIds as $index => $qId) {
+                    $examQuestions[] = [
+                        'id' => (string) Str::uuid(),
+                        'exam_id' => $exam->id,
+                        'question_id' => $qId,
+                        'question_order' => $index + 1,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
 
-            $exam->questions()->insert($examQuestions);
+                $exam->questions()->insert($examQuestions);
 
-            // Optionally, update exam total marks based on attached questions
-            $totalMarks = Question::whereIn('id', $questionIds)->sum('marks');
-            $exam->update(['total_marks' => $totalMarks]);
-        });
+                // Optionally, update exam total marks based on attached questions
+                $totalMarks = Question::whereIn('id', $questionIds)->sum('marks');
+                $exam->update(['total_marks' => $totalMarks]);
+            });
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to attach questions to exam: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -71,6 +83,10 @@ class ExamService extends BaseService
      */
     public function deleteExam(Exam $exam): bool
     {
-        return $exam->delete();
+        try {
+            return $exam->delete();
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to delete exam: ' . $e->getMessage());
+        }
     }
 }

@@ -32,25 +32,41 @@ class SubjectService extends BaseService
 
     public function createSubject(array $data): Model
     {
-        Cache::forget('active_subjects_list');
-        return $this->repository->create($data);
+        try {
+            Cache::forget('active_subjects_list');
+            return $this->repository->create($data);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create subject: ' . $e->getMessage());
+        }
     }
 
     public function updateSubject(Subject $subject, array $data): bool
     {
-        Cache::forget('active_subjects_list');
-        return $this->repository->update($subject, $data);
+        try {
+            Cache::forget('active_subjects_list');
+            return $this->repository->update($subject, $data);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to update subject: ' . $e->getMessage());
+        }
     }
 
     public function deleteSubject(Subject $subject): bool
     {
-        Cache::forget('active_subjects_list');
-        return $this->repository->delete($subject);
+        try {
+            Cache::forget('active_subjects_list');
+            return $this->repository->delete($subject);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to delete subject: ' . $e->getMessage());
+        }
     }
 
     public function createChapter(Subject $subject, array $data): Chapter
     {
-        Cache::forget('active_subjects_list');
-        return $subject->chapters()->create($data); // Chapter logic could have its own repository, but nested creation via relation is okay.
+        try {
+            Cache::forget('active_subjects_list');
+            return $subject->chapters()->create($data); // Chapter logic could have its own repository, but nested creation via relation is okay.
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create chapter: ' . $e->getMessage());
+        }
     }
 }

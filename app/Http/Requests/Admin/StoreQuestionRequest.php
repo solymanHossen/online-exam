@@ -44,7 +44,7 @@ class StoreQuestionRequest extends FormRequest
             'subject_id' => 'required|uuid|exists:subjects,id',
             'chapter_id' => 'required|uuid|exists:chapters,id',
             'question_text' => 'required|string',
-            'question_image' => 'nullable|image|max:2048',
+            'question_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'explanation' => 'nullable|string',
             'difficulty' => 'required|string|in:easy,medium,hard',
             'marks' => 'required|numeric|min:0',
@@ -53,7 +53,7 @@ class StoreQuestionRequest extends FormRequest
             // Options validation
             'options' => 'required|array|min:2',
             'options.*.option_text' => 'required|string',
-            'options.*.option_image' => 'nullable|image|max:2048',
+            'options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'options.*.is_correct' => 'boolean',
         ];
     }

@@ -67,7 +67,7 @@ class QuestionController extends Controller
             'difficulty' => $validated['difficulty'],
             'marks' => $validated['marks'],
             'negative_marks' => $validated['negative_marks'],
-            'created_by' => auth()->id() ?? 'placeholder_user_id', // Replace with auth()->id() when users exist
+            'created_by' => auth()->id() ?? \App\Models\User::role('admin')->first()?->id,
             'is_active' => true,
         ];
 

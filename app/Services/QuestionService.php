@@ -24,24 +24,36 @@ class QuestionService extends BaseService
 
     public function createQuestion(array $data, array $options): Model
     {
-        return DB::transaction(function () use ($data, $options) {
-            $question = $this->repository->create($data);
+        try {
+            return DB::transaction(function () use ($data, $options) {
+                $question = $this->repository->create($data);
 
-            if (! empty($options)) {
-                $question->options()->createMany($options);
-            }
+                if (!empty($options)) {
+                    $question->options()->createMany($options);
+                }
 
-            return $question;
-        });
+                return $question;
+            });
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to create question: ' . $e->getMessage());
+        }
     }
 
     public function updateQuestion(Question $question, array $data): bool
     {
-        return $this->repository->update($question, $data);
+        try {
+            return $this->repository->update($question, $data);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to update question: ' . $e->getMessage());
+        }
     }
 
     public function deleteQuestion(Question $question): bool
     {
-        return $this->repository->delete($question);
+        try {
+            return $this->repository->delete($question);
+        } catch (\Exception $e) {
+            throw new \Exception('Failed to delete question: ' . $e->getMessage());
+        }
     }
 }

@@ -44,7 +44,7 @@ export default function ExamBuilder() {
 
     const submit = (e: React.FormEvent) => {
         e.preventDefault();
-        console.log("Saving exam with questions", data, selectedQuestions.map(q => q.id));
+        // Saving exam with questions
     };
 
     return (
@@ -167,8 +167,8 @@ export default function ExamBuilder() {
                                 <div className="flex-1 pr-3">
                                     <div className="flex gap-2 mb-1">
                                         <span className={`text-[10px] uppercase font-bold px-1.5 rounded border ${q.difficulty === 'easy' ? 'bg-green-50 text-green-600 border-green-200' :
-                                                q.difficulty === 'medium' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' :
-                                                    'bg-red-50 text-red-600 border-red-200'
+                                            q.difficulty === 'medium' ? 'bg-yellow-50 text-yellow-600 border-yellow-200' :
+                                                'bg-red-50 text-red-600 border-red-200'
                                             }`}>
                                             {q.difficulty}
                                         </span>
@@ -179,8 +179,8 @@ export default function ExamBuilder() {
                                     onClick={() => addQuestion(q)}
                                     disabled={!!selectedQuestions.find(sq => sq.id === q.id)}
                                     className={`p-1.5 rounded-md ${selectedQuestions.find(sq => sq.id === q.id)
-                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                            : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                        : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
                                         }`}
                                 >
                                     <Plus size={18} />
