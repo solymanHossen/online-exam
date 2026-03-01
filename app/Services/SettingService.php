@@ -4,32 +4,28 @@ namespace App\Services;
 
 use App\Models\SystemSetting;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Redis;
 
 class SettingService extends BaseService
 {
-    private const REDIS_PREFIX = 'system_settings:';
+    private const ALL_SETTINGS_CACHE_KEY = 'system_settings.all';
+
+    private static function singleCacheKey(string $key): string
+    {
+        return 'system_settings.' . $key;
+    }
 
     public function get(string $key, $default = null)
     {
-        $cacheKey = self::REDIS_PREFIX . $key;
+        return Cache::rememberForever(self::singleCacheKey($key), function () use ($key, $default) {
+            $setting = SystemSetting::find($key);
 
-        $cachedValue = Redis::get($cacheKey);
-        if ($cachedValue !== null) {
-            return json_decode($cachedValue, true);
-        }
-
-        $setting = SystemSetting::find($key);
-        $value = $setting ? json_decode($setting->value, true) : $default;
-
-        Redis::set($cacheKey, json_encode($value));
-
-        return $value;
+            return $setting ? json_decode($setting->value, true) : $default;
+        });
     }
 
     public function getAll(): array
     {
-        return Cache::remember('all_system_settings', 86400, function () {
+        return Cache::rememberForever(self::ALL_SETTINGS_CACHE_KEY, function () {
             $settings = SystemSetting::all();
             $result = [];
             foreach ($settings as $setting) {
@@ -46,9 +42,8 @@ class SettingService extends BaseService
             ['value' => json_encode($value)]
         );
 
-        $cacheKey = self::REDIS_PREFIX . $key;
-        Redis::set($cacheKey, json_encode($value));
-        Cache::forget('all_system_settings');
+        Cache::forget(self::singleCacheKey($key));
+        Cache::forget(self::ALL_SETTINGS_CACHE_KEY);
 
         return $setting;
     }
@@ -56,8 +51,7 @@ class SettingService extends BaseService
     public function delete(string $key): void
     {
         SystemSetting::destroy($key);
-        $cacheKey = self::REDIS_PREFIX . $key;
-        Redis::del($cacheKey);
-        Cache::forget('all_system_settings');
+        Cache::forget(self::singleCacheKey($key));
+        Cache::forget(self::ALL_SETTINGS_CACHE_KEY);
     }
 }

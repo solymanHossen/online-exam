@@ -39,8 +39,24 @@ class SystemUtilityController extends Controller
             Artisan::call('storage:link');
 
             return response()->json(['message' => 'Storage link created successfully.']);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to create storage link: ' . $e->getMessage()], 500);
+        } catch (\Throwable $e) {
+            $message = strtolower($e->getMessage());
+            $isSymlinkRestricted = str_contains($message, 'symlink')
+                || str_contains($message, 'disabled')
+                || str_contains($message, 'not permitted')
+                || str_contains($message, 'operation not permitted');
+
+            if ($isSymlinkRestricted) {
+                return response()->json([
+                    'message' => 'Symlink creation is restricted on this hosting plan.',
+                    'warning' => 'Symlink creation is restricted on this hosting plan. The app is still usable, but public file links may require manual hosting setup. Please contact your host or use a cPanel file manager workaround.',
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Could not create storage link automatically on this server.',
+                'warning' => 'Could not create storage link automatically on this server. Please run "php artisan storage:link" manually when shell access is available.',
+            ]);
         }
     }
 
@@ -76,22 +92,10 @@ class SystemUtilityController extends Controller
             return response()->json(['message' => 'Queue connection updated successfully.']);
         }
 
-        return response()->json(['message' => 'Failed to update .env file. Ensure permissions are correct.'], 500);
+        return response()->json([
+            'message' => 'Automatic .env update failed due to hosting restrictions.',
+            'warning' => 'Please edit the .env file manually and set QUEUE_CONNECTION to your preferred value (sync or database). Ensure the .env file is writable (usually 0644).',
+        ]);
     }
 
-    /**
-     * Dedicated method to process a batch of queue jobs triggered via Web/Cron
-     */
-    public function processQueue(): JsonResponse
-    {
-        try {
-            // stop-when-empty ensures the process dies after finishing, preventing timeout crashes in HTTP
-            Artisan::call('queue:work', ['--stop-when-empty' => true]);
-            $output = Artisan::output();
-
-            return response()->json(['message' => 'Queue processed successfully.', 'output' => $output]);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Failed to process queue: ' . $e->getMessage()], 500);
-        }
-    }
 }

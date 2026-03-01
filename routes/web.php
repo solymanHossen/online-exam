@@ -39,7 +39,7 @@ use Inertia\Inertia;
  * ==========================================================
  * These routes handle the GUI-based installation process for new users.
  */
-Route::prefix('install')->name('install.')->controller(InstallController::class)->group(function () {
+Route::middleware('is-installed')->prefix('install')->name('install.')->controller(InstallController::class)->group(function () {
     // Renders the initial welcome screen for the installer
     Route::get('/', 'welcome')->name('welcome');
 
@@ -97,6 +97,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
  * Strictly protected routes requiring the 'admin' role middleware.
  */
 Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('questions/statistics', [QuestionController::class, 'statistics'])->name('questions.statistics');
+
     // RESTful resource controllers for core application entities
     Route::resource('users', UserController::class);
     Route::resource('batches', BatchController::class);
@@ -120,12 +122,6 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
         Route::post('/update-env', 'updateEnvSettings')->name('update-env');
     });
 });
-
-/**
- * Dedicated Public/Cron Route for Queue Processing
- * Secured via token or run locally via cPanel cron to process queued jobs (evaluations, emails).
- */
-Route::get('/cron/process-queue', [SystemUtilityController::class, 'processQueue'])->name('cron.process-queue');
 
 /**
  * ==========================================================

@@ -21,7 +21,6 @@ class SubjectControllerTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        \Illuminate\Support\Facades\Config::set('inertia.testing.ensure_pages_exist', false);
 
         $this->admin = User::factory()->admin()->create();
         $this->student = User::factory()->student()->create();

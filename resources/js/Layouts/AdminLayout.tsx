@@ -35,12 +35,12 @@ interface Props {
 }
 
 const SIDEBAR_NAV = [
-    { title: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { title: 'Academic', href: '/admin/subjects', icon: BookOpen }, // Reusing subjects as Academic per previous routing
     { title: 'Question Bank', href: '/admin/questions', icon: FileQuestion },
     { title: 'Exams', href: '/admin/exams', icon: GraduationCap },
     { title: 'Students', href: '/admin/students', icon: Users },
-    { title: 'Settings', href: '/admin/settings', icon: Settings },
+    { title: 'Settings', href: '/admin/system-utilities', icon: Settings },
 ];
 
 export default function AdminLayout({ children, header }: Props) {
@@ -202,7 +202,7 @@ export default function AdminLayout({ children, header }: Props) {
                                     </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem asChild>
-                                    <Link href="/admin/settings" className="flex items-center w-full cursor-pointer">
+                                    <Link href="/admin/system-utilities" className="flex items-center w-full cursor-pointer">
                                         <Settings className="mr-2 h-4 w-4 text-muted-foreground" />
                                         <span>Settings</span>
                                     </Link>

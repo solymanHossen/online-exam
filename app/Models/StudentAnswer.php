@@ -15,7 +15,8 @@ class StudentAnswer extends Model
         'exam_attempt_id',
         'question_id',
         'selected_option_id',
-        'answer_text',
+        'is_correct',
+        'marks_awarded',
     ];
 
     protected $casts = [

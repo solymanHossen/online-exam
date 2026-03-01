@@ -128,8 +128,8 @@ export default function SystemUtilities({ queueConnection, appDebug }: Props) {
                                             </SelectContent>
                                         </Select>
                                         <p className="text-sm text-gray-500 mt-2">
-                                            If set to 'Database Queue', you must set up a cPanel Cron Job running every minute: <br />
-                                            <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">wget -qO- {window.location.origin}/cron/process-queue</code>
+                                            If set to 'Database Queue', configure a cron job to run Laravel scheduler every minute: <br />
+                                            <code className="bg-gray-100 px-1 py-0.5 rounded text-xs">* * * * * php /home/your-user/your-app/artisan schedule:run &gt;/dev/null 2&gt;&amp;1</code>
                                         </p>
                                     </div>
 

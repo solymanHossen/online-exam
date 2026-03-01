@@ -3,20 +3,20 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\SaveAnswerRequest;
 use App\Jobs\EvaluateExamAttempt;
 use App\Models\ExamAttempt;
 use App\Models\StudentAnswer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 
 class AttemptController extends Controller
 {
     /**
      * Auto-save a single answer asynchronously.
      */
-    public function saveAnswer(Request $request, ExamAttempt $attempt)
+    public function saveAnswer(SaveAnswerRequest $request, ExamAttempt $attempt)
     {
         Gate::authorize('update', $attempt);
 
@@ -26,30 +26,23 @@ class AttemptController extends Controller
             __('You cannot modify answers for a completed or expired exam attempt.')
         );
 
-        $validated = $request->validate([
-            'question_id' => [
-                'required',
-                'uuid',
-                Rule::exists('questions', 'id')->where('exam_id', $attempt->exam_id),
-            ],
-            'selected_option_id' => [
-                'required',
-                'uuid',
-                Rule::exists('question_options', 'id')->where('question_id', $request->question_id),
-            ],
-        ]);
+        try {
+            $validated = $request->validated();
 
-        StudentAnswer::updateOrCreate(
-            [
-                'exam_attempt_id' => $attempt->id,
-                'question_id' => $validated['question_id'],
-            ],
-            [
-                'selected_option_id' => $validated['selected_option_id'],
-            ]
-        );
+            StudentAnswer::updateOrCreate(
+                [
+                    'exam_attempt_id' => $attempt->id,
+                    'question_id' => $validated['question_id'],
+                ],
+                [
+                    'selected_option_id' => $validated['selected_option_id'],
+                ]
+            );
 
-        return response()->json(['message' => __('Answer saved successfully.')]);
+            return response()->json(['message' => __('Answer saved successfully.')]);
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
     }
 
     /**
@@ -77,6 +70,8 @@ class AttemptController extends Controller
                 EvaluateExamAttempt::dispatch($attempt);
 
                 return redirect()->route('student.exams.index')->with('success', __('Exam submitted successfully! Your results will be available shortly.'));
+            } catch (\Throwable $e) {
+                return back()->withInput()->with('error', $e->getMessage());
             } finally {
                 $lock->release();
             }

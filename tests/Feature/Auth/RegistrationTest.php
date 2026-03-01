@@ -18,7 +18,7 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
-        \App\Models\Role::firstOrCreate(['name' => 'student', 'display_name' => 'Student']);
+        \App\Models\Role::firstOrCreate(['name' => 'student']);
 
         $response = $this->post('/register', [
             'name' => 'Test User',

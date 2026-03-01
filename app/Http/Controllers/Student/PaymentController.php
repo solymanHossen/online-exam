@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Student\ProcessPaymentRequest;
 use App\Http\Resources\PaymentResource;
 use App\Models\Payment;
 use App\Services\PaymentService;
@@ -10,6 +11,8 @@ use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,14 +40,9 @@ class PaymentController extends Controller
     /**
      * Initiate a checkout process.
      */
-    public function initiateCheckout(Request $request)
+    public function initiateCheckout(ProcessPaymentRequest $request)
     {
-        $request->validate([
-            'gateway' => 'required|in:stripe,paypal',
-            'amount' => 'required|numeric|min:1',
-            'type' => 'nullable|string',
-            'description' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         $user = Auth::user();
 
@@ -53,8 +51,8 @@ class PaymentController extends Controller
 
         if ($lock->get()) {
             try {
-                $gatewayName = $request->input('gateway');
-                $amount = (float) $request->input('amount');
+                $gatewayName = $validated['gateway'];
+                $amount = (float) $validated['amount'];
                 $currency = 'USD'; // You can make this dynamic if needed
 
                 // Process payment via service
@@ -63,12 +61,14 @@ class PaymentController extends Controller
                     $amount,
                     $currency,
                     $user,
-                    $request->input('type', 'exam_fee'),
-                    $request->input('description', '')
+                    $validated['type'] ?? 'exam_fee',
+                    $validated['description'] ?? ''
                 );
 
                 // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
                 return Inertia::location($result['redirect_url']);
+            } catch (\Throwable $e) {
+                return back()->withInput()->with('error', $e->getMessage());
             } finally {
                 $lock->release();
             }
@@ -94,35 +94,178 @@ class PaymentController extends Controller
     public function webhook(Request $request, string $gateway)
     {
         $payload = $request->getContent();
+        $gateway = strtolower($gateway);
 
+        if (!in_array($gateway, ['stripe', 'paypal'], true)) {
+            return response()->json(['error' => 'Unsupported gateway'], 422);
+        }
+
+        if (!$this->verifyWebhookSignature($request, $gateway, $payload)) {
+            Log::warning('Rejected payment webhook due to invalid signature.', ['gateway' => $gateway]);
+
+            return response()->json(['error' => 'Invalid signature'], 401);
+        }
+
+        $transactionId = $this->extractTransactionId($request, $gateway);
+
+        if (!$transactionId) {
+            return response()->json(['error' => 'Missing transaction identifier'], 422);
+        }
+
+        try {
+            $this->paymentService->verifyPayment($gateway, $transactionId);
+
+            return response()->json(['status' => 'webhook securely processed']);
+        } catch (\Throwable $e) {
+            Log::error('Payment webhook processing failed.', [
+                'gateway' => $gateway,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json(['error' => 'Webhook processing failed'], 500);
+        }
+    }
+
+    private function verifyWebhookSignature(Request $request, string $gateway, string $payload): bool
+    {
         if ($gateway === 'stripe') {
-            $signature = $request->header('Stripe-Signature');
+            return $this->verifyStripeWebhookSignature($request, $payload);
+        }
 
-            try {
-                // Must configure services.stripe.webhook_secret in production
-                $webhookSecret = config('services.stripe.webhook_secret');
-                if ($webhookSecret) {
-                    $event = \Stripe\Webhook::constructEvent($payload, $signature, $webhookSecret);
+        if ($gateway === 'paypal') {
+            return $this->verifyPayPalWebhookSignature($request, $payload);
+        }
 
-                    if ($event->type === 'checkout.session.completed') {
-                        // Assuming payment_intent is stored as the transaction ID locally
-                        $transactionId = $event->data->object->payment_intent;
-                        $this->paymentService->verifyPayment($gateway, $transactionId);
-                    }
-                }
-            } catch (\Exception $e) {
-                return response()->json(['error' => 'Stripe webhook signature verification failed'], 400);
+        return false;
+    }
+
+    private function verifyStripeWebhookSignature(Request $request, string $payload): bool
+    {
+        $secret = (string) config('services.stripe.webhook_secret', '');
+        if ($secret === '') {
+            return false;
+        }
+
+        $signatureHeader = (string) $request->header('Stripe-Signature', '');
+        if ($signatureHeader === '') {
+            return false;
+        }
+
+        $timestamp = null;
+        $signatures = [];
+
+        foreach (explode(',', $signatureHeader) as $part) {
+            $segments = explode('=', trim($part), 2);
+            if (count($segments) !== 2) {
+                continue;
             }
-        } elseif ($gateway === 'paypal') {
-            // Validate PayPal Webhook Signature here via their SDK/Verification endpoint
-            // Do NOT trust the payload blindly without signature verification.
-            $transactionId = $request->input('resource.id');
-            // Assuming signature verification passed above:
-            if ($transactionId) {
-                $this->paymentService->verifyPayment($gateway, $transactionId);
+
+            [$key, $value] = $segments;
+            if ($key === 't' && ctype_digit($value)) {
+                $timestamp = (int) $value;
+            }
+
+            if ($key === 'v1' && $value !== '') {
+                $signatures[] = $value;
             }
         }
 
-        return response()->json(['status' => 'webhook securely processed']);
+        if ($timestamp === null || $signatures === []) {
+            return false;
+        }
+
+        $maxSkewSeconds = 300;
+        if (abs(time() - $timestamp) > $maxSkewSeconds) {
+            return false;
+        }
+
+        $signedPayload = $timestamp . '.' . $payload;
+        $expectedSignature = hash_hmac('sha256', $signedPayload, $secret);
+
+        foreach ($signatures as $signature) {
+            if (hash_equals($expectedSignature, $signature)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function verifyPayPalWebhookSignature(Request $request, string $payload): bool
+    {
+        $clientId = (string) config('services.paypal.client_id', '');
+        $clientSecret = (string) config('services.paypal.client_secret', '');
+        $webhookId = (string) config('services.paypal.webhook_id', '');
+        $mode = (string) config('services.paypal.mode', 'sandbox');
+
+        if ($clientId === '' || $clientSecret === '' || $webhookId === '') {
+            return false;
+        }
+
+        $transmissionId = (string) $request->header('PAYPAL-TRANSMISSION-ID', '');
+        $transmissionTime = (string) $request->header('PAYPAL-TRANSMISSION-TIME', '');
+        $transmissionSig = (string) $request->header('PAYPAL-TRANSMISSION-SIG', '');
+        $certUrl = (string) $request->header('PAYPAL-CERT-URL', '');
+        $authAlgo = (string) $request->header('PAYPAL-AUTH-ALGO', '');
+
+        if ($transmissionId === '' || $transmissionTime === '' || $transmissionSig === '' || $certUrl === '' || $authAlgo === '') {
+            return false;
+        }
+
+        $baseUrl = $mode === 'live'
+            ? 'https://api-m.paypal.com'
+            : 'https://api-m.sandbox.paypal.com';
+
+        $tokenResponse = Http::asForm()
+            ->withBasicAuth($clientId, $clientSecret)
+            ->post($baseUrl . '/v1/oauth2/token', [
+                'grant_type' => 'client_credentials',
+            ]);
+
+        if (! $tokenResponse->successful()) {
+            return false;
+        }
+
+        $accessToken = (string) ($tokenResponse->json('access_token') ?? '');
+        if ($accessToken === '') {
+            return false;
+        }
+
+        $event = json_decode($payload, true);
+        if (! is_array($event)) {
+            return false;
+        }
+
+        $verifyResponse = Http::withToken($accessToken)
+            ->post($baseUrl . '/v1/notifications/verify-webhook-signature', [
+                'auth_algo' => $authAlgo,
+                'cert_url' => $certUrl,
+                'transmission_id' => $transmissionId,
+                'transmission_sig' => $transmissionSig,
+                'transmission_time' => $transmissionTime,
+                'webhook_id' => $webhookId,
+                'webhook_event' => $event,
+            ]);
+
+        if (! $verifyResponse->successful()) {
+            return false;
+        }
+
+        return (string) $verifyResponse->json('verification_status') === 'SUCCESS';
+    }
+
+    private function extractTransactionId(Request $request, string $gateway): ?string
+    {
+        if ($gateway === 'stripe') {
+            return $request->input('data.object.id')
+                ?? $request->input('data.object.payment_intent');
+        }
+
+        if ($gateway === 'paypal') {
+            return $request->input('resource.supplementary_data.related_ids.order_id')
+                ?? $request->input('resource.id');
+        }
+
+        return null;
     }
 }

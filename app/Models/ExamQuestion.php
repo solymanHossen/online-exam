@@ -2,13 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use App\Traits\HasOrderedUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ExamQuestion extends Model
 {
-    use HasUuids;
+    use HasOrderedUuids, SoftDeletes;
 
     protected $fillable = ['exam_id', 'question_id', 'question_order'];
 

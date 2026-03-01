@@ -10,6 +10,7 @@ use App\Models\Exam;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -49,29 +50,41 @@ class ExamController extends Controller
     {
         Gate::authorize('create', Exam::class);
 
-        $examData = $request->validated();
-        $examData['created_by'] = auth()->id();
+        try {
+            $examData = $request->validated();
+            $examData['created_by'] = Auth::id();
 
-        $this->examService->createExam($examData);
+            $this->examService->createExam($examData);
 
-        return redirect()->route('admin.exams.index')->with('success', __('Exam created successfully.'));
+            return redirect()->route('admin.exams.index')->with('success', __('Exam created successfully.'));
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
     }
 
     public function update(UpdateExamRequest $request, Exam $exam): RedirectResponse
     {
         Gate::authorize('update', $exam);
 
-        $this->examService->updateExam($exam, $request->validated());
+        try {
+            $this->examService->updateExam($exam, $request->validated());
 
-        return redirect()->route('admin.exams.index')->with('success', __('Exam updated successfully.'));
+            return redirect()->route('admin.exams.index')->with('success', __('Exam updated successfully.'));
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
     }
 
     public function destroy(Exam $exam): RedirectResponse
     {
         Gate::authorize('delete', $exam);
 
-        $this->examService->deleteExam($exam);
+        try {
+            $this->examService->deleteExam($exam);
 
-        return redirect()->route('admin.exams.index')->with('success', __('Exam deleted successfully.'));
+            return redirect()->route('admin.exams.index')->with('success', __('Exam deleted successfully.'));
+        } catch (\Throwable $e) {
+            return back()->withInput()->with('error', $e->getMessage());
+        }
     }
 }

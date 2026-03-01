@@ -27,9 +27,9 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // 1. Roles
-        $adminRole = Role::firstOrCreate(['name' => 'Admin']);
-        $teacherRole = Role::firstOrCreate(['name' => 'Teacher']);
-        $studentRole = Role::firstOrCreate(['name' => 'Student']);
+        $adminRole = Role::firstOrCreate(['name' => 'admin']);
+        $teacherRole = Role::firstOrCreate(['name' => 'teacher']);
+        $studentRole = Role::firstOrCreate(['name' => 'student']);
 
         // 2. Admin User
         $adminUser = User::updateOrCreate(
@@ -43,7 +43,11 @@ class DatabaseSeeder extends Seeder
         );
 
         // 3. Batches & Subjects
-        $batch = Batch::firstOrCreate(['name' => '2026 CodeCanyon Demo Batch', 'class_level' => 'Grade 12']);
+        $batch = Batch::firstOrCreate([
+            'name' => '2026 CodeCanyon Demo Batch',
+            'class_level' => 'Grade 12',
+            'year' => 2026,
+        ]);
         $subject = Subject::factory()->create(['name' => 'General Knowledge']);
         $chapter = Chapter::factory()->create(['subject_id' => $subject->id, 'name' => 'Demo Chapter']);
 
@@ -159,7 +163,6 @@ class DatabaseSeeder extends Seeder
                     'exam_attempt_id' => $attempt->id,
                     'question_id' => $eq->question_id,
                     'selected_option_id' => $selectedOption->id,
-                    'answer_text' => null,
                 ]);
             }
         }

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Repositories\PaymentRepository;
 use App\Services\Gateways\PaymentGatewayFactory;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class PaymentService extends BaseService
 {
@@ -27,7 +28,9 @@ class PaymentService extends BaseService
 
     public function createPayment(array $data): \Illuminate\Database\Eloquent\Model
     {
-        return $this->repository->create($data);
+        return DB::transaction(function () use ($data) {
+            return $this->repository->create($data);
+        });
     }
 
     /**
@@ -38,27 +41,29 @@ class PaymentService extends BaseService
      */
     public function processPayment(string $gatewayName, float $amount, string $currency, User $user, string $type = 'exam_fee', string $description = ''): array
     {
-        $gateway = $this->gatewayFactory->make($gatewayName);
+        return DB::transaction(function () use ($gatewayName, $amount, $currency, $user, $type, $description) {
+            $gateway = $this->gatewayFactory->make($gatewayName);
 
-        $gatewayResponse = $gateway->charge($amount, $currency, [
-            'return_url' => route('student.payments.index'), // Or a dedicated callback route
-        ]);
+            $gatewayResponse = $gateway->charge($amount, $currency, [
+                'return_url' => route('student.payments.index'), // Or a dedicated callback route
+            ]);
 
-        $payment = $this->repository->create([
-            'user_id' => $user->id,
-            'amount' => $amount,
-            'currency' => $currency,
-            'status' => 'pending',
-            'transaction_id' => $gatewayResponse['transaction_id'],
-            'gateway_name' => $gatewayName,
-            'type' => $type,
-            'description' => $description,
-        ]);
+            $payment = $this->repository->create([
+                'user_id' => $user->id,
+                'amount' => $amount,
+                'currency' => $currency,
+                'status' => 'pending',
+                'transaction_id' => $gatewayResponse['transaction_id'],
+                'gateway_name' => $gatewayName,
+                'type' => $type,
+                'description' => $description,
+            ]);
 
-        return [
-            'redirect_url' => $gatewayResponse['redirect_url'],
-            'payment' => $payment->toArray(),
-        ];
+            return [
+                'redirect_url' => $gatewayResponse['redirect_url'],
+                'payment' => $payment->toArray(),
+            ];
+        });
     }
 
     /**
@@ -66,18 +71,27 @@ class PaymentService extends BaseService
      */
     public function verifyPayment(string $gatewayName, string $transactionId): bool
     {
-        $gateway = $this->gatewayFactory->make($gatewayName);
-
-        if ($gateway->verify($transactionId)) {
-            // Find payment and update status
+        return DB::transaction(function () use ($gatewayName, $transactionId) {
             $payment = $this->repository->findByTransactionId($transactionId);
-            if ($payment) {
+            if (! $payment) {
+                return false;
+            }
+
+            if ($payment->status === 'completed') {
+                return true;
+            }
+
+            $gateway = $this->gatewayFactory->make($gatewayName);
+
+            if ($gateway->verify($transactionId)) {
                 $this->repository->update($payment, ['status' => 'completed']);
 
                 return true;
             }
-        }
 
-        return false;
+            $this->repository->update($payment, ['status' => 'failed']);
+
+            return false;
+        });
     }
 }

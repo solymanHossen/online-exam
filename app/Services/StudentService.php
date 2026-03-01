@@ -39,6 +39,10 @@ class StudentService extends BaseService
                 return Role::where('name', 'student')->value('id');
             });
 
+            if (! $roleId) {
+                throw new \RuntimeException('Student role is not configured.');
+            }
+
             $userData = [
                 'name' => $data['name'],
                 'email' => $data['email'],

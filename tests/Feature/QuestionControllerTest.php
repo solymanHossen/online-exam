@@ -30,7 +30,6 @@ class QuestionControllerTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        \Illuminate\Support\Facades\Config::set('inertia.testing.ensure_pages_exist', false);
 
         // 1. Setup Base Authorization dependencies
         $this->admin = User::factory()->admin()->create();
@@ -240,10 +239,10 @@ class QuestionControllerTest extends TestCase
         $option = QuestionOption::where('is_correct', true)->first();
 
         $this->assertNotNull($question->question_image);
-        Storage::disk('public')->assertExists($question->question_image);
+        $this->assertTrue(Storage::disk('public')->exists($question->question_image));
 
         $this->assertNotNull($option->option_image);
-        Storage::disk('public')->assertExists($option->option_image);
+        $this->assertTrue(Storage::disk('public')->exists($option->option_image));
     }
 
     public function test_admin_can_update_existing_question()

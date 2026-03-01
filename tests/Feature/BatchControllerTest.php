@@ -23,9 +23,6 @@ class BatchControllerTest extends TestCase
         // Bypass Vite manifest generation for testing
         $this->withoutVite();
 
-        // Disable strict Inertia component existence checks since Frontend might not be fully built/compiled in CI
-        \Illuminate\Support\Facades\Config::set('inertia.testing.ensure_pages_exist', false);
-
         // 1. Setup Base Authorization dependencies
         $this->admin = User::factory()->admin()->create();
         $this->student = User::factory()->student()->create();

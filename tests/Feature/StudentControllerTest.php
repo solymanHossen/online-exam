@@ -24,11 +24,10 @@ class StudentControllerTest extends TestCase
         parent::setUp();
 
         $this->withoutVite();
-        \Illuminate\Support\Facades\Config::set('inertia.testing.ensure_pages_exist', false);
 
         // Ensure roles exist for the controller to resolve them
-        \App\Models\Role::firstOrCreate(['name' => 'admin', 'display_name' => 'Administrator']);
-        \App\Models\Role::firstOrCreate(['name' => 'student', 'display_name' => 'Student Student']);
+        \App\Models\Role::firstOrCreate(['name' => 'admin']);
+        \App\Models\Role::firstOrCreate(['name' => 'student']);
 
         $this->admin = User::factory()->admin()->create();
         $this->studentUser = User::factory()->student()->create();

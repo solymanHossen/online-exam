@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\Install\ProcessAdminRequest;
+use App\Http\Requests\Install\ProcessDatabaseRequest;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
@@ -79,40 +80,40 @@ class InstallController extends Controller
     /**
      * Process Database configuration
      */
-    public function processDatabase(Request $request)
+    public function processDatabase(ProcessDatabaseRequest $request)
     {
-        $request->validate([
-            'db_host' => 'required|string',
-            'db_port' => 'required|numeric',
-            'db_database' => 'required|string',
-            'db_username' => 'required|string',
-            'db_password' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
         // Attempt Connection securely
         try {
             DB::purge();
-            config(['database.connections.mysql.host' => $request->db_host]);
-            config(['database.connections.mysql.port' => $request->db_port]);
-            config(['database.connections.mysql.database' => $request->db_database]);
-            config(['database.connections.mysql.username' => $request->db_username]);
-            config(['database.connections.mysql.password' => $request->db_password]);
+            config(['database.connections.mysql.host' => $validated['db_host']]);
+            config(['database.connections.mysql.port' => $validated['db_port']]);
+            config(['database.connections.mysql.database' => $validated['db_database']]);
+            config(['database.connections.mysql.username' => $validated['db_username']]);
+            config(['database.connections.mysql.password' => $validated['db_password'] ?? null]);
 
             DB::connection('mysql')->getPdo();
 
             // Overwrite ENV file securely
-            $this->setEnvFile([
+            $envWrite = $this->setEnvFile([
                 'DB_CONNECTION' => 'mysql',
-                'DB_HOST' => $request->db_host,
-                'DB_PORT' => $request->db_port,
-                'DB_DATABASE' => $request->db_database,
-                'DB_USERNAME' => $request->db_username,
-                'DB_PASSWORD' => $request->db_password ?? '',
+                'DB_HOST' => $validated['db_host'],
+                'DB_PORT' => (string) $validated['db_port'],
+                'DB_DATABASE' => $validated['db_database'],
+                'DB_USERNAME' => $validated['db_username'],
+                'DB_PASSWORD' => $validated['db_password'] ?? '',
             ]);
+
+            if (!$envWrite['success']) {
+                return back()
+                    ->withInput()
+                    ->withErrors(['env' => $envWrite['message']]);
+            }
 
             return redirect()->route('install.migrations');
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return back()->withErrors(['connection' => 'Could not connect to the database. Please check your configuration. Error: ' . $e->getMessage()]);
         }
     }
@@ -151,13 +152,9 @@ class InstallController extends Controller
     /**
      * Process Admin Creation
      */
-    public function processAdmin(Request $request)
+    public function processAdmin(ProcessAdminRequest $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        $validated = $request->validated();
 
         try {
             // Re-purge DB cache to ensure the models know we migrated
@@ -166,13 +163,13 @@ class InstallController extends Controller
             // Delete previously seeded users to give them a clean instance
             User::truncate();
 
-            $adminRole = Role::firstOrCreate(['name' => 'admin', 'display_name' => 'Administrator']);
+            $adminRole = Role::firstOrCreate(['name' => 'admin']);
 
             $user = User::create([
                 'role_id' => $adminRole->id,
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
             ]);
 
@@ -182,11 +179,21 @@ class InstallController extends Controller
             try {
                 Artisan::call('storage:link');
                 return redirect()->route('install.complete')->with('success', 'Installation completed successfully.');
-            } catch (\Exception $e) {
-                return redirect()->route('install.complete')->with('warning', 'Installation successful, but could not create storage symlink. If images do not load, please run "php artisan storage:link" manually or use the System Utilities -> Link Storage menu.');
+            } catch (\Throwable $e) {
+                $message = strtolower($e->getMessage());
+                $isSymlinkRestricted = str_contains($message, 'symlink')
+                    || str_contains($message, 'disabled')
+                    || str_contains($message, 'not permitted')
+                    || str_contains($message, 'operation not permitted');
+
+                if ($isSymlinkRestricted) {
+                    return redirect()->route('install.complete')->with('warning', 'Installation successful, but this hosting environment restricts symlink creation. If media files are not accessible, contact your host for a public storage mapping workaround.');
+                }
+
+                return redirect()->route('install.complete')->with('warning', 'Installation successful, but automatic storage linking failed. Please run "php artisan storage:link" manually when possible.');
             }
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             return back()->withErrors(['admin' => 'Failed to create admin: ' . $e->getMessage()]);
         }
     }
@@ -202,26 +209,57 @@ class InstallController extends Controller
     /**
      * Environment Manipulation Utility
      */
-    protected function setEnvFile($data)
+    protected function setEnvFile(array $data): array
     {
         $path = base_path('.env');
+        $manualInstructions = 'Automatic .env update failed due to hosting restrictions. Please update your .env manually with the database values from this step and ensure the .env file is writable (typically 0644).';
 
-        if (!File::exists($path)) {
-            File::copy(base_path('.env.example'), $path);
+        if (!File::exists($path) && !File::copy(base_path('.env.example'), $path)) {
+            return [
+                'success' => false,
+                'message' => $manualInstructions,
+            ];
+        }
+
+        if (!is_writable($path)) {
+            return [
+                'success' => false,
+                'message' => $manualInstructions,
+            ];
         }
 
         $envFile = file_get_contents($path);
 
+        if ($envFile === false) {
+            return [
+                'success' => false,
+                'message' => $manualInstructions,
+            ];
+        }
+
         foreach ($data as $key => $value) {
+            $normalizedValue = str_replace(["\r", "\n"], '', (string) $value);
+            $pattern = '/^' . preg_quote($key, '/') . '=.*/m';
+
             // Remove the old entry
-            $envFile = preg_replace("/^{$key}=.*/m", "{$key}={$value}", $envFile);
+            $envFile = preg_replace($pattern, "{$key}={$normalizedValue}", $envFile);
 
             // Add it if it wasn't replaced (meaning it didn't exist)
-            if (strpos($envFile, "{$key}={$value}") === false) {
-                $envFile .= "\n{$key}={$value}";
+            if (strpos($envFile, "{$key}={$normalizedValue}") === false) {
+                $envFile .= "\n{$key}={$normalizedValue}";
             }
         }
 
-        file_put_contents($path, $envFile);
+        if (file_put_contents($path, $envFile) === false) {
+            return [
+                'success' => false,
+                'message' => $manualInstructions,
+            ];
+        }
+
+        return [
+            'success' => true,
+            'message' => 'Environment file updated successfully.',
+        ];
     }
 }

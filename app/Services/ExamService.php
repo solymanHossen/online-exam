@@ -38,7 +38,9 @@ class ExamService extends BaseService
     public function createExam(array $data): Exam
     {
         try {
-            return $this->examRepository->create($data);
+            return DB::transaction(function () use ($data) {
+                return $this->examRepository->create($data);
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to create exam: ' . $e->getMessage(), ['exception' => $e]);
             throw new \RuntimeException(__('Failed to create exam. Please check your data and try again.'), 0, $e);
@@ -55,7 +57,9 @@ class ExamService extends BaseService
     public function updateExam(Exam $exam, array $data): bool
     {
         try {
-            return $this->examRepository->update($exam, $data);
+            return DB::transaction(function () use ($exam, $data) {
+                return $this->examRepository->update($exam, $data);
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to update exam: ' . $e->getMessage(), ['exception' => $e]);
             throw new \RuntimeException(__('Failed to update exam. Please try again later.'), 0, $e);
@@ -106,7 +110,9 @@ class ExamService extends BaseService
     public function deleteExam(Exam $exam): bool
     {
         try {
-            return $exam->delete();
+            return DB::transaction(function () use ($exam) {
+                return $exam->delete();
+            });
         } catch (\Throwable $e) {
             Log::error('Failed to delete exam: ' . $e->getMessage(), ['exception' => $e]);
             throw new \RuntimeException(__('Failed to delete exam. It could be in use.'), 0, $e);

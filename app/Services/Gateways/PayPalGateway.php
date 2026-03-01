@@ -3,16 +3,44 @@
 namespace App\Services\Gateways;
 
 use App\Contracts\PaymentGatewayInterface;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class PayPalGateway implements PaymentGatewayInterface
 {
-    /**
-     * Constructor to initialize PayPal API or SDK.
-     */
-    public function __construct()
+    private function baseUrl(): string
     {
-        // Initialize PayPal client here using a package like srmklive/paypal
+        $mode = (string) config('services.paypal.mode', 'sandbox');
+
+        return $mode === 'live'
+            ? 'https://api-m.paypal.com'
+            : 'https://api-m.sandbox.paypal.com';
+    }
+
+    private function accessToken(): string
+    {
+        $clientId = (string) config('services.paypal.client_id', '');
+        $clientSecret = (string) config('services.paypal.client_secret', '');
+
+        if ($clientId === '' || $clientSecret === '') {
+            throw new \RuntimeException('PayPal credentials are not configured.');
+        }
+
+        $response = Http::asForm()
+            ->withBasicAuth($clientId, $clientSecret)
+            ->post($this->baseUrl().'/v1/oauth2/token', [
+                'grant_type' => 'client_credentials',
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayPal access token request failed: '.$response->body());
+        }
+
+        $token = (string) ($response->json('access_token') ?? '');
+        if ($token === '') {
+            throw new \RuntimeException('PayPal returned an invalid access token response.');
+        }
+
+        return $token;
     }
 
     /**
@@ -20,15 +48,45 @@ class PayPalGateway implements PaymentGatewayInterface
      */
     public function charge(float $amount, string $currency, array $options = []): array
     {
-        Log::info('Initiating PayPal Charge', ['amount' => $amount, 'currency' => $currency]);
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Invalid amount for PayPal charge.');
+        }
 
-        // CodeCanyon-ready: Create PayPal order
-        // Mocking the response
-        $transactionId = 'PAYID-'.uniqid();
+        $successUrl = (string) ($options['success_url'] ?? route('student.payments.callback'));
+        $cancelUrl = (string) ($options['cancel_url'] ?? route('student.payments.index'));
+
+        $token = $this->accessToken();
+
+        $response = Http::withToken($token)
+            ->post($this->baseUrl().'/v2/checkout/orders', [
+                'intent' => 'CAPTURE',
+                'purchase_units' => [[
+                    'amount' => [
+                        'currency_code' => strtoupper($currency),
+                        'value' => number_format($amount, 2, '.', ''),
+                    ],
+                ]],
+                'application_context' => [
+                    'return_url' => $successUrl,
+                    'cancel_url' => $cancelUrl,
+                ],
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('PayPal order creation failed: '.$response->body());
+        }
+
+        $payload = $response->json();
+        $orderId = (string) ($payload['id'] ?? '');
+        $approvalLink = collect($payload['links'] ?? [])->firstWhere('rel', 'approve')['href'] ?? '';
+
+        if ($orderId === '' || $approvalLink === '') {
+            throw new \RuntimeException('PayPal returned an invalid order response.');
+        }
 
         return [
-            'redirect_url' => $options['return_url'] ?? url('/'), // Mock redirect to PayPal approval URL
-            'transaction_id' => $transactionId,
+            'redirect_url' => (string) $approvalLink,
+            'transaction_id' => $orderId,
         ];
     }
 
@@ -37,10 +95,22 @@ class PayPalGateway implements PaymentGatewayInterface
      */
     public function verify(string $transactionId, array $options = []): bool
     {
-        Log::info('Verifying PayPal Transaction', ['transaction_id' => $transactionId]);
+        $token = $this->accessToken();
 
-        // CodeCanyon-ready: Capture/Verify the PayPal order using $transactionId
+        $orderResponse = Http::withToken($token)->get($this->baseUrl()."/v2/checkout/orders/{$transactionId}");
+        if ($orderResponse->successful()) {
+            $status = (string) ($orderResponse->json('status') ?? '');
 
-        return true; // Mock true for verification
+            return in_array($status, ['APPROVED', 'COMPLETED'], true);
+        }
+
+        $captureResponse = Http::withToken($token)->get($this->baseUrl()."/v2/payments/captures/{$transactionId}");
+        if (! $captureResponse->successful()) {
+            return false;
+        }
+
+        $captureStatus = (string) ($captureResponse->json('status') ?? '');
+
+        return $captureStatus === 'COMPLETED';
     }
 }

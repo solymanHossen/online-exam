@@ -1,6 +1,63 @@
 import { ReactNode } from 'react';
 import { PaginatedData } from '@/types';
 import { Link } from '@inertiajs/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
+const decodeHtmlEntities = (value: string): string =>
+    value
+        .replace(/&laquo;/gi, '«')
+        .replace(/&raquo;/gi, '»')
+        .replace(/&amp;/gi, '&')
+        .replace(/&lt;/gi, '<')
+        .replace(/&gt;/gi, '>')
+        .replace(/&#039;/gi, "'")
+        .replace(/&quot;/gi, '"')
+        .replace(/&nbsp;/gi, ' ');
+
+const normalizePaginationLabel = (label: string): string => {
+    const withoutTags = label.replace(/<[^>]*>/g, ' ');
+    const decoded = decodeHtmlEntities(withoutTags);
+
+    return decoded.replace(/\s+/g, ' ').trim();
+};
+
+const getPaginationLabelType = (label: string): 'previous' | 'next' | 'text' => {
+    const normalized = normalizePaginationLabel(label).toLowerCase();
+
+    if (normalized.includes('previous') || normalized.startsWith('«') || normalized.startsWith('‹')) {
+        return 'previous';
+    }
+
+    if (normalized.includes('next') || normalized.endsWith('»') || normalized.endsWith('›')) {
+        return 'next';
+    }
+
+    return 'text';
+};
+
+const renderPaginationLabel = (label: string): ReactNode => {
+    const labelType = getPaginationLabelType(label);
+
+    if (labelType === 'previous') {
+        return (
+            <span className="flex items-center gap-1">
+                <ChevronLeft className="w-4 h-4" />
+                <span className="hidden sm:inline">Previous</span>
+            </span>
+        );
+    }
+
+    if (labelType === 'next') {
+        return (
+            <span className="flex items-center gap-1">
+                <span className="hidden sm:inline">Next</span>
+                <ChevronRight className="w-4 h-4" />
+            </span>
+        );
+    }
+
+    return normalizePaginationLabel(label);
+};
 
 interface Column<T> {
     header: string;
@@ -81,8 +138,9 @@ export default function DataTable<T extends Record<string, any>>({ data, columns
                                             ${i === 0 ? 'rounded-l-md' : ''}
                                             ${i === data.meta.links.length - 1 ? 'rounded-r-md' : ''}
                                         `}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
+                                    >
+                                        {renderPaginationLabel(link.label)}
+                                    </Link>
                                 ))}
                             </nav>
                         </div>

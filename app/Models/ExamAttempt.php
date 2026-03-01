@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\HasOrderedUuids;
 use App\Traits\TimezoneSerializable;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ExamAttempt extends Model
 {
-    use HasFactory, HasUuids, TimezoneSerializable;
+    use HasFactory, HasOrderedUuids, TimezoneSerializable, SoftDeletes;
 
     protected $fillable = [
         'exam_id',

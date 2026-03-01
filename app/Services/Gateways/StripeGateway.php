@@ -3,34 +3,58 @@
 namespace App\Services\Gateways;
 
 use App\Contracts\PaymentGatewayInterface;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Http;
 
 class StripeGateway implements PaymentGatewayInterface
 {
-    /**
-     * Constructor to initialize Stripe API keys or SDK.
-     */
-    public function __construct()
-    {
-        // Typically, you would initialize Stripe here:
-        // \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-    }
+    private string $baseUrl = 'https://api.stripe.com/v1';
 
     /**
-     * Initiate a charge with Stripe Checkout.
+     * Initiate a charge with Stripe Checkout Session.
      */
     public function charge(float $amount, string $currency, array $options = []): array
     {
-        Log::info('Initiating Stripe Charge', ['amount' => $amount, 'currency' => $currency]);
+        $secret = (string) config('services.stripe.secret', '');
+        if ($secret === '') {
+            throw new \RuntimeException('Stripe secret is not configured.');
+        }
 
-        // CodeCanyon-ready: This is where you would call \Stripe\Checkout\Session::create(...)
-        // Since we are mocking the actual API call for structural purposes, we return a mock URL.
+        if ($amount <= 0) {
+            throw new \InvalidArgumentException('Invalid amount for Stripe charge.');
+        }
 
-        $transactionId = 'pi_'.uniqid(); // Mock Stripe PaymentIntent ID
+        $successUrl = (string) ($options['success_url'] ?? route('student.payments.callback'));
+        $cancelUrl = (string) ($options['cancel_url'] ?? route('student.payments.index'));
+
+        $minorAmount = (int) round($amount * 100);
+
+        $response = Http::asForm()
+            ->withToken($secret)
+            ->post("{$this->baseUrl}/checkout/sessions", [
+                'mode' => 'payment',
+                'success_url' => $successUrl,
+                'cancel_url' => $cancelUrl,
+                'line_items[0][price_data][currency]' => strtolower($currency),
+                'line_items[0][price_data][product_data][name]' => 'Online Exam Payment',
+                'line_items[0][price_data][unit_amount]' => $minorAmount,
+                'line_items[0][quantity]' => 1,
+            ]);
+
+        if (! $response->successful()) {
+            throw new \RuntimeException('Stripe checkout session creation failed: '.$response->body());
+        }
+
+        $payload = $response->json();
+        $sessionId = (string) ($payload['id'] ?? '');
+        $redirectUrl = (string) ($payload['url'] ?? '');
+
+        if ($sessionId === '' || $redirectUrl === '') {
+            throw new \RuntimeException('Stripe returned an invalid checkout response.');
+        }
 
         return [
-            'redirect_url' => $options['return_url'] ?? url('/'), // Mock redirect to Stripe Checkout URL
-            'transaction_id' => $transactionId,
+            'redirect_url' => $redirectUrl,
+            'transaction_id' => $sessionId,
         ];
     }
 
@@ -39,11 +63,33 @@ class StripeGateway implements PaymentGatewayInterface
      */
     public function verify(string $transactionId, array $options = []): bool
     {
-        Log::info('Verifying Stripe Transaction', ['transaction_id' => $transactionId]);
+        $secret = (string) config('services.stripe.secret', '');
+        if ($secret === '') {
+            throw new \RuntimeException('Stripe secret is not configured.');
+        }
 
-        // CodeCanyon-ready: Here you would call \Stripe\PaymentIntent::retrieve($transactionId)
-        // and check if $paymentIntent->status === 'succeeded'
+        if (str_starts_with($transactionId, 'cs_')) {
+            $sessionResponse = Http::withToken($secret)->get("{$this->baseUrl}/checkout/sessions/{$transactionId}");
+            if (! $sessionResponse->successful()) {
+                return false;
+            }
 
-        return true; // Mock true for verification
+            $paymentStatus = (string) ($sessionResponse->json('payment_status') ?? '');
+
+            return $paymentStatus === 'paid';
+        }
+
+        if (str_starts_with($transactionId, 'pi_')) {
+            $intentResponse = Http::withToken($secret)->get("{$this->baseUrl}/payment_intents/{$transactionId}");
+            if (! $intentResponse->successful()) {
+                return false;
+            }
+
+            $status = (string) ($intentResponse->json('status') ?? '');
+
+            return $status === 'succeeded';
+        }
+
+        return false;
     }
 }

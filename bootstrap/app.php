@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // Task 2: Webhook CSRF Exclusions
         $middleware->validateCsrfTokens(except: [
-            'webhooks/*', // Exclude Stripe/PayPal and other webhooks from CSRF protection
+            'webhooks/payments/*',
         ]);
 
         $middleware->web(append: [
@@ -25,6 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
+            'is-installed' => \App\Http\Middleware\IsInstalled::class,
+            'cron.secret' => \App\Http\Middleware\RequireCronSecret::class,
         ]);
         //
     })
