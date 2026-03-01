@@ -10,4 +10,14 @@ export default defineConfig({
         }),
         react(),
     ],
+    build: {
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    vendor: ['react', 'react-dom', '@inertiajs/react', 'axios'],
+                    ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@headlessui/react', 'lucide-react']
+                }
+            }
+        }
+    }
 });

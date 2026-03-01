@@ -41,7 +41,8 @@ class AttemptController extends Controller
 
             return response()->json(['message' => __('Answer saved successfully.')]);
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+            \\Illuminate\Support\Facades\Log::error($e->getMessage());
+            return response()->json(['error' => __('An error occurred. Please try again.')], 500);
         }
     }
 
@@ -71,7 +72,7 @@ class AttemptController extends Controller
 
                 return redirect()->route('student.exams.index')->with('success', __('Exam submitted successfully! Your results will be available shortly.'));
             } catch (\Throwable $e) {
-                return back()->withInput()->with('error', $e->getMessage());
+                \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
             } finally {
                 $lock->release();
             }

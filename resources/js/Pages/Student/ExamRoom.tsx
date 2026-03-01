@@ -62,6 +62,16 @@ export default function ExamRoom({ exam, attempt }: any) {
 
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
+    // --- CSRF Keep Alive ---
+    useEffect(() => {
+        // Ping the server every 15 minutes to keep the session alive
+        const keepAliveInterval = setInterval(() => {
+            axios.get('/sanctum/csrf-cookie').catch(() => {});
+        }, 15 * 60 * 1000);
+
+        return () => clearInterval(keepAliveInterval);
+    }, []);
+
     // --- Network Watcher ---
     useEffect(() => {
         const handleOnline = () => {

@@ -33,6 +33,7 @@ class StoreExamRequest extends FormRequest
         return [
             'title' => 'required|string|max:255',
             'batch_id' => 'required|exists:batches,id',
+            'price' => 'nullable|numeric|min:0',
             'total_marks' => 'required|integer|min:0',
             'duration_minutes' => 'required|integer|min:1',
             'pass_marks' => 'required|integer|min:0|lte:total_marks',

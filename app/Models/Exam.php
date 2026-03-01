@@ -19,6 +19,7 @@ class Exam extends Model
         'title',
         'description',
         'batch_id',
+        'price',
         'total_marks',
         'duration_minutes',
         'pass_marks',

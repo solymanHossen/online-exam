@@ -52,7 +52,13 @@ class PaymentController extends Controller
         if ($lock->get()) {
             try {
                 $gatewayName = $validated['gateway'];
-                $amount = (float) $validated['amount'];
+                $exam = \App\Models\Exam::findOrFail($validated['exam_id']);
+                $amount = (float) $exam->price;
+                
+                if ($amount <= 0) {
+                    return back()->with('error', 'This exam is free or invalid amount.');
+                }
+                
                 $currency = 'USD'; // You can make this dynamic if needed
 
                 // Process payment via service
@@ -68,7 +74,7 @@ class PaymentController extends Controller
                 // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
                 return Inertia::location($result['redirect_url']);
             } catch (\Throwable $e) {
-                return back()->withInput()->with('error', $e->getMessage());
+                \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
             } finally {
                 $lock->release();
             }

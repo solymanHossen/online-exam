@@ -58,7 +58,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam created successfully.'));
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 
@@ -71,7 +71,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam updated successfully.'));
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 
@@ -84,7 +84,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam deleted successfully.'));
         } catch (\Throwable $e) {
-            return back()->withInput()->with('error', $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 }

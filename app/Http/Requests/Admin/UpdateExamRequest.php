@@ -33,6 +33,7 @@ class UpdateExamRequest extends FormRequest
         return [
             'title' => 'sometimes|required|string|max:255',
             'batch_id' => 'sometimes|required|exists:batches,id',
+            'price' => 'nullable|numeric|min:0',
             'total_marks' => 'sometimes|required|integer|min:0',
             'duration_minutes' => 'sometimes|required|integer|min:1',
             'pass_marks' => 'sometimes|required|integer|min:0|lte:total_marks',

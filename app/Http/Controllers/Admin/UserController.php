@@ -31,7 +31,7 @@ class UserController extends Controller
         $roles = $this->roleService->getAllRoles();
 
         return Inertia::render('Admin/Users/Index', [
-            'users' => $users,
+            'users' => \App\Http\Resources\UserResource::collection($users),
             'roles' => $roles,
         ]);
     }

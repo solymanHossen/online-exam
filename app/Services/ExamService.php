@@ -77,19 +77,24 @@ class ExamService extends BaseService
     {
         try {
             DB::transaction(function () use ($exam, $questionIds) {
+                // Delete existing ones explicitly to simulate 'sync' behavior for HasMany
+                $exam->questions()->forceDelete();
+                
                 $syncData = [];
                 $timestamp = now();
 
                 foreach ($questionIds as $index => $qId) {
-                    $syncData[$qId] = [
+                    $syncData[] = [
                         'id' => (string) Str::uuid(),
+                        'exam_id' => $exam->id,
+                        'question_id' => $qId,
                         'question_order' => $index + 1,
                         'created_at' => $timestamp,
                         'updated_at' => $timestamp,
                     ];
                 }
 
-                $exam->questions()->sync($syncData);
+                \App\Models\ExamQuestion::insert($syncData);
 
                 // Update exam total marks based on attached questions
                 $totalMarks = DB::table('questions')->whereIn('id', $questionIds)->sum('marks');
