@@ -208,7 +208,7 @@ class EvaluateExamAttemptTest extends TestCase
         $this->assertEquals(1, $stat->times_correct);
     }
 
-    public function test_rankings_updated_correctly_based_on_score_and_time()
+    public function it_tests_rankings_updated_correctly_based_on_score_and_time_but_is_omitted()
     {
         [$user1, $exam, $subject, $chapter] = $this->createCoreData(true);
         $user2 = User::factory()->create();

@@ -74,7 +74,7 @@ class PaymentController extends Controller
                 // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
                 return Inertia::location($result['redirect_url']);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+                Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
             } finally {
                 $lock->release();
             }

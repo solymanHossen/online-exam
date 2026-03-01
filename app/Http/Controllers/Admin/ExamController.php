@@ -12,6 +12,7 @@ use App\Traits\ResponseTrait;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -58,7 +59,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam created successfully.'));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+            Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 
@@ -71,7 +72,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam updated successfully.'));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+            Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 
@@ -84,7 +85,7 @@ class ExamController extends Controller
 
             return redirect()->route('admin.exams.index')->with('success', __('Exam deleted successfully.'));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+            Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
         }
     }
 }
