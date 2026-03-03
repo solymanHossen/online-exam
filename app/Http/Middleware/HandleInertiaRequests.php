@@ -42,6 +42,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'appEnv' => app()->environment(),
             'locale' => $locale,
             'translations' => collect($translations)->mapWithKeys(function ($value, $key) {
                 return [$key => $value];

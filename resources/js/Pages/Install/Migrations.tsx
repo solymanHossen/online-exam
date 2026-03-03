@@ -21,14 +21,13 @@ export default function Migrations() {
             <div className="flex flex-col items-center justify-center py-12 space-y-6">
 
                 {errors.migration ? (
-                    <div className="p-4 w-full bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
+                    <div className="p-4 w-full bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
                         <h3 className="font-bold mb-2">Migration Failed</h3>
                         <p>{errors.migration}</p>
                         <div className="mt-4 flex justify-center">
                             <Button
                                 onClick={() => window.location.reload()}
                                 variant="outline"
-                                className="text-white border-neutral-700 bg-neutral-800"
                             >
                                 Try Again
                             </Button>
@@ -46,8 +45,8 @@ export default function Migrations() {
                         </div>
 
                         <div className="text-center space-y-2">
-                            <h3 className="text-xl font-medium text-white">Installing Schema...</h3>
-                            <p className="text-neutral-400 text-sm max-w-sm mx-auto">
+                            <h3 className="text-xl font-medium text-foreground">Installing Schema...</h3>
+                            <p className="text-muted-foreground text-sm max-w-sm mx-auto">
                                 This might take a minute depending on your server speed. Do not close this window.
                             </p>
                         </div>

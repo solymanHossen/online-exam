@@ -3,9 +3,10 @@
 namespace App\Repositories;
 
 use App\Models\Subject;
+use App\Repositories\Interfaces\SubjectRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class SubjectRepository extends BaseRepository
+class SubjectRepository extends BaseRepository implements SubjectRepositoryInterface
 {
     public function __construct(Subject $model)
     {

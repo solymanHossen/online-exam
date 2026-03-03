@@ -1,3 +1,4 @@
+import { cn } from '@/lib/utils';
 import { LabelHTMLAttributes } from 'react';
 
 export default function InputLabel({
@@ -7,13 +8,7 @@ export default function InputLabel({
     ...props
 }: LabelHTMLAttributes<HTMLLabelElement> & { value?: string }) {
     return (
-        <label
-            {...props}
-            className={
-                `block text-sm font-medium text-gray-700 ` +
-                className
-            }
-        >
+        <label {...props} className={cn('block text-sm font-medium text-foreground', className)}>
             {value ? value : children}
         </label>
     );

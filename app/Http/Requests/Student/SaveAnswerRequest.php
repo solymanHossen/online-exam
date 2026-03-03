@@ -10,7 +10,10 @@ class SaveAnswerRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        /** @var ExamAttempt|null $attempt */
+        $attempt = $this->route('attempt');
+
+        return $attempt !== null && $this->user()?->can('update', $attempt) === true;
     }
 
     public function rules(): array

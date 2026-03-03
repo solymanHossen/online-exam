@@ -2,6 +2,8 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import DataTable from '@/Components/DataTable';
 import { Head, router } from '@inertiajs/react';
 import { PaginatedData, User } from '@/types';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 // import { debounce } from 'lodash'; // lodash needed if we debounce, skipping for simple implementation
 
@@ -19,14 +21,17 @@ export default function UsersIndex({ users }: Props) {
         { header: 'Email', accessorKey: 'email' },
         {
             header: 'Role', accessorKey: 'role_id', cell: (item: User) => (
-                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary/10 text-primary">
                     {item.role_id ? 'Assigned' : 'User'}
                 </span>
             )
         },
         {
             header: 'Status', accessorKey: 'is_active', cell: (item: User) => (
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${item.is_active ? 'bg-indigo-100 text-indigo-800' : 'bg-red-100 text-red-800'}`}>
+                <span className={cn(
+                    'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
+                    item.is_active ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive',
+                )}>
                     {item.is_active ? 'Active' : 'Inactive'}
                 </span>
             )
@@ -34,8 +39,8 @@ export default function UsersIndex({ users }: Props) {
         {
             header: 'Actions', accessorKey: 'id', cell: (item: User) => (
                 <div className="flex gap-2">
-                    <button className="text-indigo-600 hover:text-indigo-900 transition">Edit</button>
-                    <button className="text-red-600 hover:text-red-900 transition">Delete</button>
+                    <button className="text-primary hover:text-primary/80 transition">Edit</button>
+                    <button className="text-destructive hover:text-destructive/80 transition">Delete</button>
                 </div>
             )
         }
@@ -44,10 +49,10 @@ export default function UsersIndex({ users }: Props) {
     return (
         <AdminLayout header={
             <div className="flex justify-between items-center">
-                <h2 className="font-semibold text-xl text-gray-800 leading-tight">Users Management</h2>
-                <button className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">
+                <h2 className="font-semibold text-xl text-foreground leading-tight">Users Management</h2>
+                <Button>
                     + Add New User
-                </button>
+                </Button>
             </div>
         }>
             <Head title="Users" />

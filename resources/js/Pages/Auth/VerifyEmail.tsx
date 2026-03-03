@@ -1,5 +1,5 @@
-import PrimaryButton from '@/Components/PrimaryButton';
-import GuestLayout from '@/Layouts/GuestLayout';
+import { AuthBrandButton } from '@/features/auth/components/AuthBrandButton';
+import { AuthStandaloneLayout } from '@/features/auth/components/AuthStandaloneLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 
@@ -13,39 +13,38 @@ export default function VerifyEmail({ status }: { status?: string }) {
     };
 
     return (
-        <GuestLayout>
+        <>
             <Head title="Email Verification" />
 
-            <div className="mb-4 text-sm text-gray-600">
-                Thanks for signing up! Before getting started, could you verify
-                your email address by clicking on the link we just emailed to
-                you? If you didn't receive the email, we will gladly send you
-                another.
-            </div>
+            <AuthStandaloneLayout
+                title="Verify Email"
+                description="Please verify your email address before getting started."
+            >
+                <p className="text-sm text-muted-foreground">
+                    Thanks for signing up! Check your inbox and click the verification link. If you didn&apos;t receive it, request another one below.
+                </p>
 
-            {status === 'verification-link-sent' && (
-                <div className="mb-4 text-sm font-medium text-green-600">
-                    A new verification link has been sent to the email address
-                    you provided during registration.
-                </div>
-            )}
+                {status === 'verification-link-sent' && (
+                    <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+                        A new verification link has been sent to your email address.
+                    </div>
+                )}
 
-            <form onSubmit={submit}>
-                <div className="mt-4 flex items-center justify-between">
-                    <PrimaryButton disabled={processing}>
+                <form onSubmit={submit} className="space-y-3">
+                    <AuthBrandButton className="w-full" type="submit" disabled={processing}>
                         Resend Verification Email
-                    </PrimaryButton>
+                    </AuthBrandButton>
 
                     <Link
                         href={route('logout')}
                         method="post"
                         as="button"
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="w-full text-center text-sm text-muted-foreground underline transition-colors hover:text-foreground"
                     >
                         Log Out
                     </Link>
-                </div>
-            </form>
-        </GuestLayout>
+                </form>
+            </AuthStandaloneLayout>
+        </>
     );
 }

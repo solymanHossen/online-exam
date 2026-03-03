@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateSubjectRequest extends FormRequest
@@ -11,7 +12,10 @@ class UpdateSubjectRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        /** @var User|null $user */
+        $user = $this->user();
+
+        return (bool) $user?->is_active && strtolower((string) $user?->role?->name) === 'admin';
     }
 
     /**

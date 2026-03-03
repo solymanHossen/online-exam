@@ -2,6 +2,7 @@ import { Head, router } from '@inertiajs/react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Clock, CheckCircle, ChevronRight, ChevronLeft, WifiOff, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
+import { ExamAttemptDTO, ExamDTO, ExamOption, ExamQuestionNode } from '@/features/exams/types/exam';
 import {
     Dialog,
     DialogContent,
@@ -12,7 +13,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
 
-export default function ExamRoom({ exam, attempt }: any) {
+interface ExamRoomProps {
+    exam: ExamDTO;
+    attempt: ExamAttemptDTO;
+}
+
+export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
     // --- 1. Timing Logic ---
     const calculateTimeLeft = useCallback(() => {
         const end = new Date(attempt.end_time).getTime();
@@ -30,7 +36,7 @@ export default function ExamRoom({ exam, attempt }: any) {
     const loadInitialAnswers = () => {
         const serverAnswers: Record<string, string> = {};
         if (attempt.answers) {
-            attempt.answers.forEach((ans: any) => {
+            attempt.answers.forEach((ans) => {
                 if (ans.selected_option_id) {
                     serverAnswers[ans.question_id] = ans.selected_option_id;
                 }
@@ -60,7 +66,7 @@ export default function ExamRoom({ exam, attempt }: any) {
     const [warningCount, setWarningCount] = useState(0);
     const [showWarningModal, setShowWarningModal] = useState(false);
 
-    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // --- CSRF Keep Alive ---
     useEffect(() => {
@@ -180,7 +186,7 @@ export default function ExamRoom({ exam, attempt }: any) {
         });
     };
 
-    const questions = exam.questions;
+    const questions: ExamQuestionNode[] = exam.questions;
     const currentQuestionDetail = questions[currentQuestionIndex]?.question;
 
     useEffect(() => {
@@ -272,7 +278,7 @@ export default function ExamRoom({ exam, attempt }: any) {
 
                             {/* Options Mapping */}
                             <div className="space-y-4">
-                                {currentQuestionDetail.options.map((opt: any) => {
+                                {currentQuestionDetail.options.map((opt: ExamOption) => {
                                     const isSelected = answers[currentQuestionDetail.id] === opt.id;
                                     return (
                                         <label
@@ -350,7 +356,7 @@ export default function ExamRoom({ exam, attempt }: any) {
                         </div>
 
                         <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2.5 max-h-[300px] overflow-y-auto pr-1 pb-2 custom-scrollbar">
-                            {questions.map((q: any, idx: number) => {
+                            {questions.map((q: ExamQuestionNode, idx: number) => {
                                 const qid = q.question.id;
                                 const isAnswered = !!answers[qid];
                                 const isViewed = viewedQuestions.has(idx);

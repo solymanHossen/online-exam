@@ -1,5 +1,7 @@
 import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface StatRow {
     id: string;
@@ -12,39 +14,39 @@ export default function QuestionStatistics(props: any) {
     const stats: StatRow[] = props?.statistics?.data ?? [];
 
     return (
-        <AdminLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Question Statistics</h2>}>
+        <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Question Statistics</h2>}>
             <Head title="Question Statistics" />
 
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3 text-left">Question</th>
-                            <th className="px-4 py-3 text-left">Attempts</th>
-                            <th className="px-4 py-3 text-left">Correct</th>
-                            <th className="px-4 py-3 text-left">Accuracy</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <Card className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="px-4 py-3">Question</TableHead>
+                            <TableHead className="px-4 py-3">Attempts</TableHead>
+                            <TableHead className="px-4 py-3">Correct</TableHead>
+                            <TableHead className="px-4 py-3">Accuracy</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {stats.length === 0 ? (
-                            <tr><td className="px-4 py-6 text-gray-500" colSpan={4}>No statistics yet.</td></tr>
+                            <TableRow><TableCell className="px-4 py-6 text-muted-foreground" colSpan={4}>No statistics yet.</TableCell></TableRow>
                         ) : stats.map((row) => {
                             const accuracy = row.times_attempted > 0
                                 ? ((row.times_correct / row.times_attempted) * 100).toFixed(2)
                                 : '0.00';
 
                             return (
-                                <tr key={row.id} className="border-t">
-                                    <td className="px-4 py-3">{row.question?.question_text ?? '-'}</td>
-                                    <td className="px-4 py-3">{row.times_attempted}</td>
-                                    <td className="px-4 py-3">{row.times_correct}</td>
-                                    <td className="px-4 py-3">{accuracy}%</td>
-                                </tr>
+                                <TableRow key={row.id}>
+                                    <TableCell className="px-4 py-3">{row.question?.question_text ?? '-'}</TableCell>
+                                    <TableCell className="px-4 py-3">{row.times_attempted}</TableCell>
+                                    <TableCell className="px-4 py-3">{row.times_correct}</TableCell>
+                                    <TableCell className="px-4 py-3">{accuracy}%</TableCell>
+                                </TableRow>
                             );
                         })}
-                    </tbody>
-                </table>
-            </div>
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }

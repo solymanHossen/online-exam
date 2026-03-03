@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class RoleMiddleware
@@ -21,9 +22,22 @@ class RoleMiddleware
         }
 
         $user = Auth::user();
+        $acceptedRoles = collect(explode('|', $role))
+            ->flatMap(fn (string $item) => explode(',', $item))
+            ->map(fn (string $item) => Str::lower(trim($item)))
+            ->filter()
+            ->unique()
+            ->values();
 
-        // Check against the loaded role relationship
-        if (! $user->role || strtolower($user->role->name) !== strtolower($role)) {
+        if (! $user->is_active) {
+            abort(403, 'Account is disabled.');
+        }
+
+        if ($acceptedRoles->isEmpty()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if (! $user->role || ! $acceptedRoles->contains(Str::lower($user->role->name))) {
             abort(403, 'Unauthorized action.');
         }
 

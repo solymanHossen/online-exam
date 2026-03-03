@@ -4,16 +4,16 @@ namespace App\Services;
 
 use App\Models\Chapter;
 use App\Models\Subject;
-use App\Repositories\SubjectRepository;
+use App\Repositories\Interfaces\SubjectRepositoryInterface;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SubjectService extends BaseService
 {
-    protected SubjectRepository $repository;
+    protected SubjectRepositoryInterface $repository;
 
-    public function __construct(SubjectRepository $repository)
+    public function __construct(SubjectRepositoryInterface $repository)
     {
         $this->repository = $repository;
     }

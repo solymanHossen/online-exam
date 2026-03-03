@@ -1,5 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface ExamRow {
     id: string;
@@ -12,39 +14,39 @@ export default function ExamsList(props: any) {
     const exams: ExamRow[] = props?.exams?.data ?? [];
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-gray-800">Available Exams</h2>}>
+        <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-foreground">Available Exams</h2>}>
             <Head title="Available Exams" />
 
             <div className="py-8">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            <thead className="bg-gray-50 text-gray-600">
-                                <tr>
-                                    <th className="px-4 py-3 text-left">Title</th>
-                                    <th className="px-4 py-3 text-left">Duration</th>
-                                    <th className="px-4 py-3 text-left">Marks</th>
-                                    <th className="px-4 py-3 text-left">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <Card className="overflow-x-auto">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="px-4 py-3">Title</TableHead>
+                                    <TableHead className="px-4 py-3">Duration</TableHead>
+                                    <TableHead className="px-4 py-3">Marks</TableHead>
+                                    <TableHead className="px-4 py-3">Action</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
                                 {exams.length === 0 ? (
-                                    <tr><td className="px-4 py-6 text-gray-500" colSpan={4}>No active exams found.</td></tr>
+                                    <TableRow><TableCell className="px-4 py-6 text-muted-foreground" colSpan={4}>No active exams found.</TableCell></TableRow>
                                 ) : exams.map((exam) => (
-                                    <tr key={exam.id} className="border-t">
-                                        <td className="px-4 py-3">{exam.title}</td>
-                                        <td className="px-4 py-3">{exam.duration_minutes} min</td>
-                                        <td className="px-4 py-3">{exam.total_marks}</td>
-                                        <td className="px-4 py-3">
-                                            <Link href={`/student/exams/${exam.id}/room`} className="text-indigo-600 hover:text-indigo-800">
+                                    <TableRow key={exam.id}>
+                                        <TableCell className="px-4 py-3">{exam.title}</TableCell>
+                                        <TableCell className="px-4 py-3">{exam.duration_minutes} min</TableCell>
+                                        <TableCell className="px-4 py-3">{exam.total_marks}</TableCell>
+                                        <TableCell className="px-4 py-3">
+                                            <Link href={`/student/exams/${exam.id}/room`} className="text-primary hover:text-primary/80">
                                                 Start / Resume
                                             </Link>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            </TableBody>
+                        </Table>
+                    </Card>
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -1,4 +1,7 @@
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 import {
+    ForwardedRef,
     forwardRef,
     InputHTMLAttributes,
     useEffect,
@@ -13,7 +16,7 @@ export default forwardRef(function TextInput(
         isFocused = false,
         ...props
     }: InputHTMLAttributes<HTMLInputElement> & { isFocused?: boolean },
-    ref,
+    ref: ForwardedRef<{ focus: () => void }>,
 ) {
     const localRef = useRef<HTMLInputElement>(null);
 
@@ -28,13 +31,10 @@ export default forwardRef(function TextInput(
     }, [isFocused]);
 
     return (
-        <input
+        <Input
             {...props}
             type={type}
-            className={
-                'rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ' +
-                className
-            }
+            className={cn('h-10', className)}
             ref={localRef}
         />
     );

@@ -2,6 +2,16 @@ import { ReactNode } from 'react';
 import { PaginatedData } from '@/types';
 import { Link } from '@inertiajs/react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import { cn } from '@/lib/utils';
 
 const decodeHtmlEntities = (value: string): string =>
     value
@@ -73,71 +83,74 @@ interface DataTableProps<T> {
 
 export default function DataTable<T extends Record<string, any>>({ data, columns, onSearch }: DataTableProps<T>) {
     return (
-        <div className="bg-white rounded-lg shadow ring-1 ring-black ring-opacity-5">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-                <input
+        <div className="rounded-lg border bg-card text-card-foreground shadow-sm">
+            <div className="flex items-center justify-between border-b p-4">
+                <Input
                     type="text"
                     placeholder="Search..."
-                    className="border border-gray-300 rounded-md px-4 py-2 text-sm focus:ring-indigo-500 focus:border-indigo-500 w-64 md:w-80"
+                    className="w-64 md:w-80"
                     onChange={(e) => onSearch?.(e.target.value)}
                 />
             </div>
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
                             {columns.map((col, i) => (
-                                <th key={i} className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <TableHead key={i} className="px-6 py-3 text-xs uppercase tracking-wider">
                                     {col.header}
-                                </th>
+                                </TableHead>
                             ))}
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {data.data.map((item, i) => (
-                            <tr key={i} className="hover:bg-gray-50 transition duration-150">
+                            <TableRow key={i}>
                                 {columns.map((col, j) => (
-                                    <td key={j} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <TableCell key={j} className="whitespace-nowrap px-6 py-4 text-sm">
                                         {col.cell ? col.cell(item) : item[col.accessorKey as keyof T]}
-                                    </td>
+                                    </TableCell>
                                 ))}
-                            </tr>
+                            </TableRow>
                         ))}
                         {data.data.length === 0 && (
-                            <tr>
-                                <td colSpan={columns.length} className="px-6 py-8 text-center text-gray-500">
+                            <TableRow>
+                                <TableCell colSpan={columns.length} className="px-6 py-8 text-center text-muted-foreground">
                                     No records found.
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         )}
-                    </tbody>
-                </table>
+                    </TableBody>
+                </Table>
             </div>
 
             {/* Pagination Controls */}
             {data.meta && data.meta.last_page > 1 && (
-                <div className="px-4 py-3 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                <div className="flex items-center justify-between border-t px-4 py-3 sm:px-6">
                     <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                         <div>
-                            <p className="text-sm text-gray-700">
+                            <p className="text-sm text-muted-foreground">
                                 Showing <span className="font-medium">{data.meta.from}</span> to <span className="font-medium">{data.meta.to}</span> of{' '}
                                 <span className="font-medium">{data.meta.total}</span> results
                             </p>
                         </div>
                         <div>
-                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <nav className="relative z-0 inline-flex -space-x-px rounded-md" aria-label="Pagination">
                                 {data.meta.links.map((link, i) => (
                                     <Link
                                         key={i}
                                         href={link.url || '#'}
                                         preserveState
                                         preserveScroll
-                                        className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium
-                                            ${link.active ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}
-                                            ${!link.url ? 'opacity-50 cursor-not-allowed' : ''}
-                                            ${i === 0 ? 'rounded-l-md' : ''}
-                                            ${i === data.meta.links.length - 1 ? 'rounded-r-md' : ''}
-                                        `}
+                                        className={cn(
+                                            'relative inline-flex items-center border border-input px-4 py-2 text-sm font-medium',
+                                            link.active
+                                                ? 'z-10 bg-primary/10 text-primary border-primary/40'
+                                                : 'bg-background text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                                            !link.url && 'cursor-not-allowed opacity-50',
+                                            i === 0 && 'rounded-l-md',
+                                            i === data.meta.links.length - 1 && 'rounded-r-md',
+                                        )}
                                     >
                                         {renderPaginationLabel(link.label)}
                                     </Link>

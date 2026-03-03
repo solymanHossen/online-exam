@@ -1,5 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import { Card } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface PaymentRow {
     id: string;
@@ -14,42 +16,42 @@ export default function PaymentsIndex(props: any) {
     const payments: PaymentRow[] = props?.payments?.data ?? [];
 
     return (
-        <AdminLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Payments</h2>}>
+        <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Payments</h2>}>
             <Head title="Payments" />
 
-            <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-x-auto">
-                <table className="min-w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
-                        <tr>
-                            <th className="px-4 py-3 text-left">User</th>
-                            <th className="px-4 py-3 text-left">Amount</th>
-                            <th className="px-4 py-3 text-left">Gateway</th>
-                            <th className="px-4 py-3 text-left">Status</th>
-                            <th className="px-4 py-3 text-left">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <Card className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="px-4 py-3">User</TableHead>
+                            <TableHead className="px-4 py-3">Amount</TableHead>
+                            <TableHead className="px-4 py-3">Gateway</TableHead>
+                            <TableHead className="px-4 py-3">Status</TableHead>
+                            <TableHead className="px-4 py-3">Action</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
                         {payments.length === 0 ? (
-                            <tr><td className="px-4 py-6 text-gray-500" colSpan={5}>No payments found.</td></tr>
+                            <TableRow><TableCell className="px-4 py-6 text-muted-foreground" colSpan={5}>No payments found.</TableCell></TableRow>
                         ) : payments.map((payment) => (
-                            <tr key={payment.id} className="border-t">
-                                <td className="px-4 py-3">
+                            <TableRow key={payment.id}>
+                                <TableCell className="px-4 py-3">
                                     <div className="font-medium">{payment.user?.name ?? '-'}</div>
-                                    <div className="text-xs text-gray-500">{payment.user?.email ?? ''}</div>
-                                </td>
-                                <td className="px-4 py-3">{payment.amount} {payment.currency}</td>
-                                <td className="px-4 py-3">{payment.gateway_name ?? '-'}</td>
-                                <td className="px-4 py-3">{payment.status}</td>
-                                <td className="px-4 py-3">
-                                    <Link className="text-indigo-600 hover:text-indigo-800" href={`/admin/payments/${payment.id}`}>
+                                    <div className="text-xs text-muted-foreground">{payment.user?.email ?? ''}</div>
+                                </TableCell>
+                                <TableCell className="px-4 py-3">{payment.amount} {payment.currency}</TableCell>
+                                <TableCell className="px-4 py-3">{payment.gateway_name ?? '-'}</TableCell>
+                                <TableCell className="px-4 py-3">{payment.status}</TableCell>
+                                <TableCell className="px-4 py-3">
+                                    <Link className="text-primary hover:text-primary/80" href={`/admin/payments/${payment.id}`}>
                                         View
                                     </Link>
-                                </td>
-                            </tr>
+                                </TableCell>
+                            </TableRow>
                         ))}
-                    </tbody>
-                </table>
-            </div>
+                    </TableBody>
+                </Table>
+            </Card>
         </AdminLayout>
     );
 }
