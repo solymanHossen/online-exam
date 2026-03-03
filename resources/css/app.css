@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -185,7 +187,8 @@
   }
 
   .auth-page {
-    @apply auth-font flex min-h-screen items-center justify-center overflow-hidden p-4;
+    @apply flex min-h-screen items-center justify-center overflow-hidden p-4;
+    font-family: 'Montserrat', var(--font-sans), ui-sans-serif, system-ui, sans-serif;
     background-color: var(--auth-bg);
   }
 
