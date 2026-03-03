@@ -223,32 +223,35 @@
   }
 
   .auth-input {
-    @apply h-auto w-full rounded-lg border-0 px-5 py-4 text-[16px] outline-none transition-all focus-visible:ring-2;
-    background-color: var(--auth-muted);
+    @apply h-12 w-full rounded-xl border border-input px-4 py-2 text-[16px] outline-none transition-all duration-300 focus-visible:ring-2 bg-muted/20 backdrop-blur-sm;
     color: var(--auth-muted-foreground);
     --tw-ring-color: var(--auth-primary);
   }
 
   .auth-primary-button {
-    @apply h-auto rounded-lg px-14 py-3.5 text-[13px] font-bold uppercase tracking-widest transition-all;
+    @apply h-12 rounded-xl px-8 text-base font-semibold uppercase tracking-widest transition-all duration-300 active:scale-[0.98];
     background-color: var(--auth-primary);
     color: var(--auth-primary-foreground);
+    box-shadow: 0 4px 14px 0 rgba(71, 23, 246, 0.39);
   }
 
   .auth-primary-button:hover {
     filter: brightness(0.92);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(71, 23, 246, 0.23);
   }
 
   .auth-outline-button {
-    @apply h-auto rounded-full border px-14 py-3.5 text-[13px] font-bold uppercase tracking-widest transition-all;
+    @apply h-12 rounded-xl border-2 px-8 text-base font-semibold uppercase tracking-widest transition-all duration-300 active:scale-[0.98];
     border-color: var(--auth-primary-foreground);
     color: var(--auth-primary-foreground);
+    backdrop-filter: blur(4px);
   }
 
   .auth-outline-button:hover {
     background-color: var(--auth-primary-foreground);
     color: var(--auth-primary);
+    box-shadow: 0 4px 14px 0 rgba(0, 0, 0, 0.1);
   }
 
   @media (max-width: 950px) {

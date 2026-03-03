@@ -72,9 +72,9 @@ export function AuthCredentialsPanels({
         <>
           <h1 className="mb-6 text-[32px] font-bold text-foreground">Create Account</h1>
           <AuthSocialRow />
-          <p className="mb-5 text-center text-[13px] text-muted-foreground">or use your email for registration</p>
+          <p className="mb-6 text-center text-[14px] text-muted-foreground">or use your email for registration</p>
 
-          <form onSubmit={submitSignUp} className="w-full space-y-3">
+          <form onSubmit={submitSignUp} className="w-full space-y-4">
             <AuthTextField
               id="register-name"
               label=""
@@ -130,9 +130,9 @@ export function AuthCredentialsPanels({
             </div>
           ) : null}
           <AuthSocialRow />
-          <p className="mb-5 text-[13px] text-muted-foreground">or use your email password</p>
+          <p className="mb-6 text-[14px] text-muted-foreground text-center">or use your email & password</p>
 
-          <form onSubmit={submitSignIn} className="w-full space-y-3">
+          <form onSubmit={submitSignIn} className="w-full space-y-4">
             <AuthTextField
               id="login-email"
               label=""
@@ -157,13 +157,13 @@ export function AuthCredentialsPanels({
             {canResetPassword ? (
               <Link
                 href={route('password.request')}
-                className="my-2 block text-center text-[13px] text-muted-foreground transition-colors hover:text-primary"
+                className="my-4 block text-right text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Forget Your Password?
               </Link>
             ) : null}
 
-            <AuthBrandButton className="w-full" type="submit" disabled={signInProcessing}>
+            <AuthBrandButton className="mt-2 w-full" type="submit" disabled={signInProcessing}>
               Sign In
             </AuthBrandButton>
           </form>

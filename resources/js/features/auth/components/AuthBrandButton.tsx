@@ -16,9 +16,10 @@ export function AuthBrandButton({
 }: AuthBrandButtonProps) {
   return (
     <Button
+      variant={variant}
       className={cn(
-        'whitespace-nowrap focus-visible:ring-4',
-        variant === 'default' ? 'auth-primary-button focus-visible:ring-purple-300' : 'auth-outline-button focus-visible:ring-purple-400',
+        'h-12 rounded-xl whitespace-nowrap px-8 text-base font-medium transition-all duration-300 active:scale-[0.98]',
+        variant === 'default' && 'shadow-md hover:shadow-lg hover:-translate-y-0.5',
         className,
       )}
       {...props}
