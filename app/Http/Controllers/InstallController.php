@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class InstallController extends Controller
@@ -84,21 +85,13 @@ class InstallController extends Controller
     {
         $validated = $request->validated();
 
-        // Attempt Connection securely
         try {
-            DB::purge();
-            config(['database.connections.mysql.host' => $validated['db_host']]);
-            config(['database.connections.mysql.port' => $validated['db_port']]);
-            config(['database.connections.mysql.database' => $validated['db_database']]);
-            config(['database.connections.mysql.username' => $validated['db_username']]);
-            config(['database.connections.mysql.password' => $validated['db_password'] ?? null]);
-
-            DB::connection('mysql')->getPdo();
+            $resolvedHost = $this->testDatabaseConnection($validated);
 
             // Overwrite ENV file securely
             $envWrite = $this->setEnvFile([
                 'DB_CONNECTION' => 'mysql',
-                'DB_HOST' => $validated['db_host'],
+                'DB_HOST' => $resolvedHost,
                 'DB_PORT' => (string) $validated['db_port'],
                 'DB_DATABASE' => $validated['db_database'],
                 'DB_USERNAME' => $validated['db_username'],
@@ -114,7 +107,7 @@ class InstallController extends Controller
             return redirect()->route('install.migrations');
 
         } catch (\Throwable $e) {
-            return back()->withErrors(['connection' => 'Could not connect to the database. Please check your configuration. Error: ' . $e->getMessage()]);
+            return back()->withErrors(['connection' => $this->formatDatabaseConnectionError($e)]);
         }
     }
 
@@ -261,5 +254,59 @@ class InstallController extends Controller
             'success' => true,
             'message' => 'Environment file updated successfully.',
         ];
+    }
+
+    /**
+     * Attempt a database connection using installer-provided credentials.
+     * Falls back from 127.0.0.1 to localhost for shared-host compatibility.
+     */
+    protected function testDatabaseConnection(array $validated): string
+    {
+        $hostsToTry = [$validated['db_host']];
+
+        if ($validated['db_host'] === '127.0.0.1') {
+            $hostsToTry[] = 'localhost';
+        }
+
+        $lastException = null;
+
+        foreach (array_unique($hostsToTry) as $host) {
+            try {
+                DB::purge('mysql');
+                DB::disconnect('mysql');
+
+                config(['database.connections.mysql.host' => $host]);
+                config(['database.connections.mysql.port' => $validated['db_port']]);
+                config(['database.connections.mysql.database' => $validated['db_database']]);
+                config(['database.connections.mysql.username' => $validated['db_username']]);
+                config(['database.connections.mysql.password' => $validated['db_password'] ?? null]);
+
+                DB::connection('mysql')->getPdo();
+
+                return $host;
+            } catch (\Throwable $e) {
+                $lastException = $e;
+            }
+        }
+
+        throw $lastException ?? new \RuntimeException('Unknown database connection error.');
+    }
+
+    /**
+     * Convert low-level SQL exceptions into actionable installer messages.
+     */
+    protected function formatDatabaseConnectionError(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (Str::contains($message, ['SQLSTATE[HY000] [1044]', 'SQLSTATE[HY000] [1045]'])) {
+            return 'Database authentication failed. Verify DB name, username, password, and ensure this user is assigned to the database with ALL PRIVILEGES. On cPanel, both DB name and username usually require your account prefix (example: accountname_dbuser).';
+        }
+
+        if (Str::contains($message, ['Connection refused', 'SQLSTATE[HY000] [2002]'])) {
+            return 'Could not reach the MySQL server. Check host/port and use localhost if your hosting provider does not allow 127.0.0.1.';
+        }
+
+        return 'Could not connect to the database. Please re-check your configuration and hosting database privileges.';
     }
 }

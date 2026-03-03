@@ -44,6 +44,7 @@ export default function Database() {
                             className="bg-neutral-800 border-neutral-700 text-white"
                             required
                         />
+                        <p className="text-xs text-neutral-500">Use <span className="font-mono">localhost</span> on most shared hosting/cPanel servers.</p>
                         {errors.db_host && <span className="text-red-500 text-xs">{errors.db_host}</span>}
                     </div>
 
@@ -69,7 +70,7 @@ export default function Database() {
                         className="bg-neutral-800 border-neutral-700 text-white"
                         required
                     />
-                    <p className="text-xs text-neutral-500">Must be pre-created in cPanel/MySQL.</p>
+                    <p className="text-xs text-neutral-500">Must be pre-created in cPanel/MySQL (often prefixed, e.g. <span className="font-mono">account_lumina_exam</span>).</p>
                     {errors.db_database && <span className="text-red-500 text-xs">{errors.db_database}</span>}
                 </div>
 
@@ -83,6 +84,7 @@ export default function Database() {
                             className="bg-neutral-800 border-neutral-700 text-white"
                             required
                         />
+                        <p className="text-xs text-neutral-500">On cPanel, username is usually prefixed too (example: <span className="font-mono">account_online_exam</span>).</p>
                         {errors.db_username && <span className="text-red-500 text-xs">{errors.db_username}</span>}
                     </div>
 
