@@ -133,7 +133,11 @@ class DatabaseSeeder extends Seeder
 
             Student::firstOrCreate(
                 ['user_id' => $studentUser->id],
-                ['batch_id' => $batch->id, 'roll_number' => $studentUser->id]
+                [
+                    'batch_id' => $batch->id,
+                    'roll_number' => $studentUser->id,
+                    'admission_date' => now()->toDateString(),
+                ]
             );
 
             $students->push($studentUser);

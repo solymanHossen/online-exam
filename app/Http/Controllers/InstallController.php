@@ -153,18 +153,23 @@ class InstallController extends Controller
             // Re-purge DB cache to ensure the models know we migrated
             DB::purge();
 
-            // Delete previously seeded users to give them a clean instance
-            User::truncate();
-
             $adminRole = Role::firstOrCreate(['name' => 'admin']);
 
-            $user = User::create([
-                'role_id' => $adminRole->id,
+            // Update the existing seeded admin user instead of truncating (which breaks foreign keys and demo data)
+            $user = User::where('role_id', $adminRole->id)->first();
+
+            $adminData = [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'email_verified_at' => now(),
-            ]);
+            ];
+
+            if ($user) {
+                $user->update($adminData);
+            } else {
+                User::create(array_merge(['role_id' => $adminRole->id], $adminData));
+            }
 
             // Create Installed file
             file_put_contents(storage_path('installed'), 'installed at ' . date('Y-m-d H:i:s'));
