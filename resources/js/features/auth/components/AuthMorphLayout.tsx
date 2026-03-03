@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
-import { Link } from '@inertiajs/react'
-import type { ReactNode } from 'react'
+import { Link, router } from '@inertiajs/react'
+import { ReactNode, useState, useEffect } from 'react'
 
 interface AuthMorphLayoutProps {
   rightPanelActive?: boolean
@@ -9,9 +9,23 @@ interface AuthMorphLayoutProps {
 }
 
 export function AuthMorphLayout({ rightPanelActive = false, signInForm, signUpForm }: AuthMorphLayoutProps) {
+  const [isActive, setIsActive] = useState(rightPanelActive)
+
+  useEffect(() => {
+    setIsActive(rightPanelActive)
+  }, [rightPanelActive])
+
+  const handleNavigate = (e: React.MouseEvent<HTMLAnchorElement>, href: string, toRight: boolean) => {
+    e.preventDefault()
+    setIsActive(toRight)
+    setTimeout(() => {
+      router.visit(href, { preserveScroll: true, preserveState: true })
+    }, 600) // Delay to let animation finish before destroying component
+  }
+
   return (
     <div className="auth-page">
-      <div className={cn('auth-card', rightPanelActive && 'auth-right-panel-active')}>
+      <div className={cn('auth-card', isActive && 'auth-right-panel-active')}>
         <div className="auth-form-container auth-sign-up left-0 z-[1] flex flex-col items-center justify-center bg-card text-card-foreground opacity-0">
           {signUpForm}
         </div>
@@ -27,9 +41,13 @@ export function AuthMorphLayout({ rightPanelActive = false, signInForm, signUpFo
               <p className="mb-10 px-4 text-[14px] font-medium leading-relaxed text-primary-foreground/90">
                 To keep connected with us please login with your personal info
               </p>
-              <Link href={route('login')} className="auth-outline-button inline-flex items-center justify-center">
+              <a
+                href={route('login')}
+                onClick={(e) => handleNavigate(e, route('login'), false)}
+                className="auth-outline-button inline-flex items-center justify-center"
+              >
                 Sign In
-              </Link>
+              </a>
             </div>
 
             <div className="auth-overlay-panel auth-overlay-right">
@@ -37,9 +55,13 @@ export function AuthMorphLayout({ rightPanelActive = false, signInForm, signUpFo
               <p className="mb-10 px-4 text-[14px] font-medium leading-relaxed text-primary-foreground/90">
                 Register with your personal details to use all of site features
               </p>
-              <Link href={route('register')} className="auth-outline-button inline-flex items-center justify-center">
+              <a
+                href={route('register')}
+                onClick={(e) => handleNavigate(e, route('register'), true)}
+                className="auth-outline-button inline-flex items-center justify-center"
+              >
                 Sign Up
-              </Link>
+              </a>
             </div>
           </div>
         </div>

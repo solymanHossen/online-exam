@@ -262,7 +262,7 @@
   }
 
   .auth-input {
-    @apply h-auto w-full rounded-lg border-0 px-4 py-3.5 text-[14px] outline-none transition-all focus-visible:ring-2;
+    @apply h-auto w-full rounded-lg border-0 px-5 py-4 text-[16px] outline-none transition-all focus-visible:ring-2;
     background-color: var(--auth-muted);
     color: var(--auth-muted-foreground);
     --tw-ring-color: var(--auth-primary);
