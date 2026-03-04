@@ -23,9 +23,9 @@ export default function ConfirmPassword() {
 
             <AuthStandaloneLayout
                 title="Confirm Password"
-                description="This is a secure area. Confirm your password to continue."
+                description="This is a secure area of the application. Please confirm your password before continuing."
             >
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={submit} className="flex flex-col space-y-6">
                     <AuthTextField
                         id="password"
                         type="password"
@@ -37,7 +37,7 @@ export default function ConfirmPassword() {
                     />
 
                     <AuthBrandButton className="w-full" type="submit" disabled={processing}>
-                        Confirm
+                        Confirm Access
                     </AuthBrandButton>
                 </form>
             </AuthStandaloneLayout>

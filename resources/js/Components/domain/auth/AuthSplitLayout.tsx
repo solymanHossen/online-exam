@@ -8,8 +8,9 @@ interface AuthSplitLayoutProps {
   subtitle: string
   panelTitle: string
   panelDescription: string
-  panelActionText: string
-  panelActionHref: string
+  panelActionText?: string
+  panelActionHref?: string
+  panelActionMethod?: "get" | "post" | "put" | "patch" | "delete"
 }
 
 export function AuthSplitLayout({
@@ -20,6 +21,7 @@ export function AuthSplitLayout({
   panelDescription,
   panelActionText,
   panelActionHref,
+  panelActionMethod = "get",
 }: AuthSplitLayoutProps) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
@@ -40,6 +42,8 @@ export function AuthSplitLayout({
             </p>
             <Link
               href={panelActionHref}
+              method={panelActionMethod}
+              as={panelActionMethod !== "get" ? "button" : undefined}
               className="mt-8 inline-flex h-10 w-fit items-center justify-center rounded-md border border-primary-foreground px-6 text-sm font-medium transition-colors hover:bg-primary-foreground hover:text-primary"
             >
               {panelActionText}

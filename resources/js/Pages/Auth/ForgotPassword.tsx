@@ -1,5 +1,5 @@
 import { AuthBrandButton } from '@/Components/domain/auth/AuthBrandButton';
-import { AuthStandaloneLayout } from '@/Components/domain/auth/AuthStandaloneLayout';
+import { AuthSplitLayout } from '@/Components/domain/auth/AuthSplitLayout';
 import { AuthTextField } from '@/Components/domain/auth/AuthTextField';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -11,7 +11,6 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
         post(route('password.email'));
     };
 
@@ -19,21 +18,25 @@ export default function ForgotPassword({ status }: { status?: string }) {
         <>
             <Head title="Forgot Password" />
 
-            <AuthStandaloneLayout
-                title="Forgot Password"
-                description="No problem. Enter your email and we’ll send you a secure reset link."
+            <AuthSplitLayout
+                title="Reset Password"
+                subtitle="Enter your email to receive a secure reset link."
+                panelTitle="Remembered it?"
+                panelDescription="Securely log back into your account."
+                panelActionText="Log In"
+                panelActionHref={route('login')}
             >
                 {status ? (
-                    <div className="rounded-md border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+                    <div className="mb-4 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-sm text-primary font-medium backdrop-blur-sm">
                         {status}
                     </div>
                 ) : null}
 
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={submit} className="flex flex-col space-y-6 mt-4">
                     <AuthTextField
                         id="email"
                         type="email"
-                        label="Email"
+                        label="Email Address"
                         value={data.email}
                         onChange={(value) => setData('email', value)}
                         error={errors.email}
@@ -44,7 +47,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                         Email Password Reset Link
                     </AuthBrandButton>
                 </form>
-            </AuthStandaloneLayout>
+            </AuthSplitLayout>
         </>
     );
 }

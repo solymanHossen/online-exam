@@ -1,5 +1,5 @@
 import { AuthBrandButton } from '@/Components/domain/auth/AuthBrandButton';
-import { AuthStandaloneLayout } from '@/Components/domain/auth/AuthStandaloneLayout';
+import { AuthSplitLayout } from '@/Components/domain/auth/AuthSplitLayout';
 import { AuthTextField } from '@/Components/domain/auth/AuthTextField';
 import { Head, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
@@ -30,15 +30,19 @@ export default function ResetPassword({
         <>
             <Head title="Reset Password" />
 
-            <AuthStandaloneLayout
-                title="Reset Password"
-                description="Set your new password to secure your account and continue."
+            <AuthSplitLayout
+                title="Create New Password"
+                subtitle="Set your new password to secure your account and continue."
+                panelTitle="Changed your mind?"
+                panelDescription="Return to the login screen securely."
+                panelActionText="Log In"
+                panelActionHref={route('login')}
             >
-                <form onSubmit={submit} className="space-y-4">
+                <form onSubmit={submit} className="flex flex-col space-y-5 mt-4">
                     <AuthTextField
                         id="email"
                         type="email"
-                        label="Email"
+                        label="Email Address"
                         value={data.email}
                         autoComplete="username"
                         onChange={(value) => setData('email', value)}
@@ -49,7 +53,7 @@ export default function ResetPassword({
                     <AuthTextField
                         id="password"
                         type="password"
-                        label="Password"
+                        label="New Password"
                         value={data.password}
                         autoComplete="new-password"
                         onChange={(value) => setData('password', value)}
@@ -60,7 +64,7 @@ export default function ResetPassword({
                     <AuthTextField
                         id="password_confirmation"
                         type="password"
-                        label="Confirm Password"
+                        label="Confirm New Password"
                         value={data.password_confirmation}
                         autoComplete="new-password"
                         onChange={(value) =>
@@ -70,11 +74,13 @@ export default function ResetPassword({
                         inputClassName="auth-input"
                     />
 
-                    <AuthBrandButton className="w-full" type="submit" disabled={processing}>
-                        Reset Password
-                    </AuthBrandButton>
+                    <div className="pt-2">
+                        <AuthBrandButton className="w-full" type="submit" disabled={processing}>
+                            Reset Password
+                        </AuthBrandButton>
+                    </div>
                 </form>
-            </AuthStandaloneLayout>
+            </AuthSplitLayout>
         </>
     );
 }
