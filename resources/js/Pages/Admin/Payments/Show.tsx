@@ -1,10 +1,28 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/Components/ui/Button';
+import { Card, CardContent } from '@/Components/ui/Card';
 
-export default function PaymentShow(props: any) {
-    const payment = props?.payment?.data ?? props?.payment ?? null;
+interface PaymentDetails {
+    id: string;
+    amount: string | number;
+    currency: string;
+    status: string;
+    gateway_name: string | null;
+    transaction_id?: string | null;
+    type?: string | null;
+}
+
+interface PaymentShowProps {
+    payment?: PaymentDetails | { data?: PaymentDetails } | null;
+}
+
+const hasPaymentData = (value: PaymentShowProps['payment']): value is { data?: PaymentDetails } => {
+    return Boolean(value && typeof value === 'object' && 'data' in value);
+};
+
+export default function PaymentShow({ payment: rawPayment }: PaymentShowProps) {
+    const payment = hasPaymentData(rawPayment) ? (rawPayment.data ?? null) : (rawPayment ?? null);
 
     return (
         <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Payment Details</h2>}>

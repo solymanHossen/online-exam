@@ -1,10 +1,15 @@
 import { usePage } from '@inertiajs/react';
+import type { PageProps } from '@/types';
 
 export function useTranslation() {
-    const { translations, locale } = usePage().props as any;
+    const { translations = {}, locale = 'en' } = usePage<PageProps>().props;
 
-    const t = (key: string, replacements: Record<string, string | number> = {}) => {
-        let translation = (translations || {})[key] || key;
+    const t = (
+        key: string,
+        replacements: Record<string, string | number> = {},
+        fallback?: string,
+    ) => {
+        let translation = translations[key] ?? fallback ?? key;
 
         Object.keys(replacements).forEach((replacementKey) => {
             const regex = new RegExp(`:${replacementKey}`, 'g');
@@ -14,5 +19,5 @@ export function useTranslation() {
         return translation;
     };
 
-    return { t, locale: locale || 'en', translations: translations || {} };
+    return { t, locale, translations };
 }

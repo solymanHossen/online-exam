@@ -1,13 +1,13 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import NavLink from '@/Components/NavLink';
-import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Button } from '@/components/ui/button';
+import ApplicationLogo from '@/Components/shared/ApplicationLogo';
+import NavLink from '@/Components/shared/NavLink';
+import ResponsiveNavLink from '@/Components/shared/ResponsiveNavLink';
+import { Button } from '@/Components/ui/Button';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/Components/ui/DropdownMenu';
 import {
     Sheet,
     SheetContent,
@@ -15,7 +15,7 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-} from '@/components/ui/sheet';
+} from '@/Components/ui/Sheet';
 import { cn } from '@/lib/utils';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronDown, Menu } from 'lucide-react';

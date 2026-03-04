@@ -1,13 +1,13 @@
-import React, { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/Components/ui/Button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/Components/ui/Card';
+import { Label } from '@/Components/ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/Components/ui/Select';
 import { AlertCircle, CheckCircle2, HardDrive, RefreshCw, Zap } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import axios from 'axios';
+import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/Alert';
+import axios, { type AxiosError } from 'axios';
 
 interface Props {
     queueConnection: string;
@@ -28,17 +28,18 @@ export default function SystemUtilities({ queueConnection, appDebug }: Props) {
         try {
             const response = await axios.post(route(endpoint));
             setStatus({ type: 'success', message: response.data.message || successMessage });
-        } catch (error: any) {
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError<{ message?: string }>;
             setStatus({
                 type: 'error',
-                message: error.response?.data?.message || 'An error occurred during the operation.'
+                message: axiosError.response?.data?.message || 'An error occurred during the operation.'
             });
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleEnvUpdate = (e: React.FormEvent) => {
+    const handleEnvUpdate = (e: FormEvent) => {
         e.preventDefault();
         post(route('admin.system-utilities.update-env'), {
             onSuccess: () => setStatus({ type: 'success', message: 'Environment settings updated successfully.' }),

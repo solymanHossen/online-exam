@@ -1,8 +1,8 @@
 import AdminLayout from '@/Layouts/AdminLayout';
-import DataTable from '@/Components/DataTable';
+import DataTable from '@/Components/domain/DataTable';
 import { Head, router } from '@inertiajs/react';
 import { PaginatedData, User } from '@/types';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/Button';
 import { cn } from '@/lib/utils';
 import { useState, useCallback } from 'react';
 // import { debounce } from 'lodash'; // lodash needed if we debounce, skipping for simple implementation

@@ -1,8 +1,8 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Clock, CheckCircle, ChevronRight, ChevronLeft, WifiOff, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
-import { ExamAttemptDTO, ExamDTO, ExamOption, ExamQuestionNode } from '@/features/exams/types/exam';
+import { ExamAttemptDTO, ExamDTO, ExamOption, ExamQuestionNode } from '@/types/models';
 import {
     Dialog,
     DialogContent,
@@ -10,8 +10,8 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from '@/components/ui/button';
+} from "@/Components/ui/Dialog";
+import { Button } from '@/Components/ui/Button';
 
 interface ExamRoomProps {
     exam: ExamDTO;
@@ -50,8 +50,8 @@ export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
                     const localAnswers = JSON.parse(localData);
                     return { ...serverAnswers, ...localAnswers };
                 }
-            } catch (e) {
-                console.error("Failed to parse local storage answers", e);
+            } catch {
+                return serverAnswers;
             }
         }
         return serverAnswers;
@@ -163,8 +163,8 @@ export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
                     question_id: questionId,
                     selected_option_id: optionId
                 });
-            } catch (error) {
-                console.error("Failed to auto-save answer", error);
+            } catch {
+                return;
             }
         }
     };
@@ -186,8 +186,15 @@ export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
         });
     };
 
-    const questions: ExamQuestionNode[] = exam.questions;
-    const currentQuestionDetail = questions[currentQuestionIndex]?.question;
+    const questions: ExamQuestionNode[] = useMemo(() => exam.questions, [exam.questions]);
+    const currentQuestionDetail = useMemo(
+        () => questions[currentQuestionIndex]?.question,
+        [questions, currentQuestionIndex],
+    );
+    const skippedCount = useMemo(
+        () => Array.from(viewedQuestions).filter(idx => !answers[questions[idx].question.id] && idx !== currentQuestionIndex).length,
+        [viewedQuestions, answers, questions, currentQuestionIndex],
+    );
 
     useEffect(() => {
         setViewedQuestions(prev => new Set(prev).add(currentQuestionIndex));
@@ -401,7 +408,7 @@ export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
                                 </div>
                                 {/* Calculate visually skipped logic */}
                                 <span className="font-bold">
-                                    {Array.from(viewedQuestions).filter(idx => !answers[questions[idx].question.id] && idx !== currentQuestionIndex).length}
+                                    {skippedCount}
                                 </span>
                             </div>
                             <div className="flex items-center justify-between opacity-60">

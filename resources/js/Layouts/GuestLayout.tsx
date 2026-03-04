@@ -1,5 +1,5 @@
-import ApplicationLogo from '@/Components/ApplicationLogo';
-import { Card, CardContent } from '@/components/ui/card';
+import ApplicationLogo from '@/Components/shared/ApplicationLogo';
+import { Card, CardContent } from '@/Components/ui/Card';
 import { Link } from '@inertiajs/react';
 import { PropsWithChildren } from 'react';
 

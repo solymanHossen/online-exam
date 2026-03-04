@@ -1,8 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/Table';
+import type { PaginatedData } from '@/types';
 
 interface ExamRow {
     id: string;
@@ -12,8 +13,12 @@ interface ExamRow {
     total_marks: number;
 }
 
-export default function ExamsIndex(props: any) {
-    const exams: ExamRow[] = props?.exams?.data ?? [];
+interface ExamsIndexProps {
+    exams: PaginatedData<ExamRow>;
+}
+
+export default function ExamsIndex({ exams: examData }: ExamsIndexProps) {
+    const exams: ExamRow[] = examData?.data ?? [];
 
     return (
         <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Exams</h2>}>

@@ -1,8 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from '@/Components/ui/Button';
+import { Card } from '@/Components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/Table';
+import type { PaginatedData } from '@/types';
 
 interface QuestionRow {
     id: string;
@@ -11,8 +12,12 @@ interface QuestionRow {
     marks: number;
 }
 
-export default function QuestionsIndex(props: any) {
-    const questions: QuestionRow[] = props?.questions?.data ?? [];
+interface QuestionsIndexProps {
+    questions: PaginatedData<QuestionRow>;
+}
+
+export default function QuestionsIndex({ questions: questionsData }: QuestionsIndexProps) {
+    const questions: QuestionRow[] = questionsData?.data ?? [];
 
     return (
         <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Questions</h2>}>

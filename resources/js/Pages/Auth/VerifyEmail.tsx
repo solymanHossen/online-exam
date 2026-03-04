@@ -1,5 +1,5 @@
-import { AuthBrandButton } from '@/features/auth/components/AuthBrandButton';
-import { AuthStandaloneLayout } from '@/features/auth/components/AuthStandaloneLayout';
+import { AuthBrandButton } from '@/Components/domain/auth/AuthBrandButton';
+import { AuthStandaloneLayout } from '@/Components/domain/auth/AuthStandaloneLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FormEventHandler } from 'react';
 

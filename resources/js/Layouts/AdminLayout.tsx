@@ -16,9 +16,9 @@ import {
     ChevronRight
 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/Components/ui/Button';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/Components/ui/Sheet';
+import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/Avatar';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -26,8 +26,8 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ScrollArea } from '@/components/ui/scroll-area';
+} from '@/Components/ui/DropdownMenu';
+import { ScrollArea } from '@/Components/ui/ScrollArea';
 
 interface Props {
     children: ReactNode;

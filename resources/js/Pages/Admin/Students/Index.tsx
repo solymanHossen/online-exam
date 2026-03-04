@@ -1,7 +1,8 @@
 import { Head } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/Components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/Table';
+import type { PaginatedData } from '@/types';
 
 interface StudentRow {
     id: string;
@@ -11,8 +12,12 @@ interface StudentRow {
     batch?: { name?: string };
 }
 
-export default function StudentsIndex(props: any) {
-    const students: StudentRow[] = props?.students?.data ?? [];
+interface StudentsIndexProps {
+    students: PaginatedData<StudentRow>;
+}
+
+export default function StudentsIndex({ students: studentsData }: StudentsIndexProps) {
+    const students: StudentRow[] = studentsData?.data ?? [];
 
     return (
         <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Students</h2>}>

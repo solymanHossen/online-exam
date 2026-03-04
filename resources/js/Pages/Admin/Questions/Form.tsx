@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Head, router } from '@inertiajs/react';
 import { Plus, Trash2, Image as ImageIcon } from 'lucide-react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/Components/ui/Button';
 import {
     Form,
     FormControl,
@@ -14,17 +14,58 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+} from '@/Components/ui/Form';
+import { Input } from '@/Components/ui/Input';
+import { Checkbox } from '@/Components/ui/Checkbox';
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from '@/components/ui/select';
-import { Textarea } from "@/components/ui/textarea";
+} from '@/Components/ui/Select';
+import { Textarea } from "@/Components/ui/Textarea";
+import { useTranslation } from '@/hooks/useTranslation';
+
+const fileSchema = z.custom<File | undefined>(
+    (value) => value === undefined || value instanceof File,
+    'Invalid file input',
+);
+
+interface SubjectOption {
+    id: string;
+    name: string;
+}
+
+interface ChapterOption {
+    id: string;
+    name: string;
+}
+
+interface QuestionOptionInput {
+    option_text: string;
+    is_correct: boolean;
+    option_image?: string | null;
+}
+
+interface QuestionInput {
+    id: string;
+    subject_id: string;
+    chapter_id: string;
+    question_text: string;
+    explanation?: string;
+    difficulty: 'easy' | 'medium' | 'hard';
+    marks: number | string;
+    negative_marks: number | string;
+    question_image?: string | null;
+    options: QuestionOptionInput[];
+}
+
+interface QuestionBuilderProps {
+    subjects: SubjectOption[];
+    chapters: ChapterOption[];
+    question?: QuestionInput;
+}
 
 const questionSchema = z.object({
     subject_id: z.string().min(1, "Subject is required"),
@@ -34,21 +75,22 @@ const questionSchema = z.object({
     difficulty: z.enum(['easy', 'medium', 'hard']),
     marks: z.coerce.number().min(0),
     negative_marks: z.coerce.number().min(0),
-    question_image: z.any().optional(),
+    question_image: fileSchema.optional(),
     options: z.array(z.object({
         option_text: z.string().min(1, "Option text is required"),
         is_correct: z.boolean().default(false),
-        option_image: z.any().optional(),
+        option_image: fileSchema.optional(),
     })).min(2, "At least two options are required")
 });
 
 type QuestionFormValues = z.infer<typeof questionSchema>;
 
-export default function QuestionBuilder({ subjects, chapters, question }: any) {
+export default function QuestionBuilder({ subjects, chapters, question }: QuestionBuilderProps) {
+    const { t } = useTranslation();
     const isEditing = !!question;
 
     const defaultOptions = question?.options && question.options.length > 0
-        ? question.options.map((opt: any) => ({
+        ? question.options.map((opt) => ({
             option_text: opt.option_text || '',
             is_correct: !!opt.is_correct,
             option_image: undefined
@@ -59,7 +101,7 @@ export default function QuestionBuilder({ subjects, chapters, question }: any) {
         ];
 
     const form = useForm<QuestionFormValues>({
-        resolver: zodResolver(questionSchema) as any,
+        resolver: zodResolver(questionSchema) as Resolver<QuestionFormValues>,
         defaultValues: {
             subject_id: question?.subject_id || '',
             chapter_id: question?.chapter_id || '',
@@ -130,18 +172,18 @@ export default function QuestionBuilder({ subjects, chapters, question }: any) {
     };
 
     return (
-        <AdminLayout header={isEditing ? 'Edit Question' : 'Build Question'}>
-            <Head title={isEditing ? 'Edit Question' : 'Build Question'} />
+        <AdminLayout header={isEditing ? t('admin.questions.edit', {}, 'Edit Question') : t('admin.questions.build', {}, 'Build Question')}>
+            <Head title={isEditing ? t('admin.questions.edit', {}, 'Edit Question') : t('admin.questions.build', {}, 'Build Question')} />
 
             <div className="max-w-4xl mx-auto py-6">
                 <div className="bg-card text-card-foreground shadow-sm rounded-lg border p-6">
                     <div className="mb-6">
-                        <h2 className="text-xl font-bold tracking-tight">Question Builder</h2>
-                        <p className="text-muted-foreground text-sm">Create an interactive question with multiple options and media upload support.</p>
+                        <h2 className="text-xl font-bold tracking-tight">{t('admin.questions.builder', {}, 'Question Builder')}</h2>
+                        <p className="text-muted-foreground text-sm">{t('admin.questions.builder_description', {}, 'Create an interactive question with multiple options and media upload support.')}</p>
                     </div>
 
                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit((data) => onSubmit(data as QuestionFormValues))} className="space-y-6">
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                             {/* Academic Alignment */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-muted/30 rounded-lg border border-border">
                                 <FormField
@@ -149,15 +191,15 @@ export default function QuestionBuilder({ subjects, chapters, question }: any) {
                                     name="subject_id"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Subject</FormLabel>
+                                            <FormLabel>{t('admin.questions.subject', {}, 'Subject')}</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select Subject" />
+                                                        <SelectValue placeholder={t('admin.questions.select_subject', {}, 'Select Subject')} />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {subjects?.map((s: any) => (
+                                                    {subjects?.map((s) => (
                                                         <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>
@@ -172,15 +214,15 @@ export default function QuestionBuilder({ subjects, chapters, question }: any) {
                                     name="chapter_id"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel>Chapter</FormLabel>
+                                            <FormLabel>{t('admin.questions.chapter', {}, 'Chapter')}</FormLabel>
                                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                 <FormControl>
                                                     <SelectTrigger>
-                                                        <SelectValue placeholder="Select Chapter" />
+                                                        <SelectValue placeholder={t('admin.questions.select_chapter', {}, 'Select Chapter')} />
                                                     </SelectTrigger>
                                                 </FormControl>
                                                 <SelectContent>
-                                                    {chapters?.map((c: any) => (
+                                                    {chapters?.map((c) => (
                                                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                                                     ))}
                                                 </SelectContent>

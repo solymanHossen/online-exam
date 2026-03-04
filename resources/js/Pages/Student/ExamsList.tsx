@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/Components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/Table';
+import type { PaginatedData } from '@/types';
 
 interface ExamRow {
     id: string;
@@ -10,8 +11,12 @@ interface ExamRow {
     total_marks: number;
 }
 
-export default function ExamsList(props: any) {
-    const exams: ExamRow[] = props?.exams?.data ?? [];
+interface ExamsListProps {
+    exams: PaginatedData<ExamRow>;
+}
+
+export default function ExamsList({ exams: examData }: ExamsListProps) {
+    const exams: ExamRow[] = examData?.data ?? [];
 
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold leading-tight text-foreground">Available Exams</h2>}>

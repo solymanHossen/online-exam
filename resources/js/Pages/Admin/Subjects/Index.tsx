@@ -6,22 +6,22 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-import { Button } from '@/components/ui/button';
-import { DataTable, Column } from '@/components/ui/data-table/data-table';
-import { Badge } from '@/components/ui/badge';
+import { Button } from '@/Components/ui/Button';
+import { DataTable, Column } from '@/Components/ui/DataTable';
+import { Badge } from '@/Components/ui/Badge';
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/Components/ui/DropdownMenu';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogDescription,
-} from '@/components/ui/dialog';
+} from '@/Components/ui/Dialog';
 import {
     Form,
     FormControl,
@@ -29,8 +29,9 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
+} from '@/Components/ui/Form';
+import { Input } from '@/Components/ui/Input';
+import type { PaginatedData } from '@/types';
 
 // Define TS types
 interface Chapter {
@@ -54,7 +55,7 @@ interface Props {
         last_page: number;
         per_page: number;
         total: number;
-        links: any[];
+        links: PaginatedData<Subject>['meta']['links'];
         next_page_url: string | null;
         prev_page_url: string | null;
     };

@@ -1,7 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Card } from '@/Components/ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/Components/ui/Table';
+import type { PaginatedData } from '@/types';
 
 interface PaymentRow {
     id: string;
@@ -12,8 +13,12 @@ interface PaymentRow {
     user?: { name?: string; email?: string };
 }
 
-export default function PaymentsIndex(props: any) {
-    const payments: PaymentRow[] = props?.payments?.data ?? [];
+interface PaymentsIndexProps {
+    payments: PaginatedData<PaymentRow>;
+}
+
+export default function PaymentsIndex({ payments: paymentData }: PaymentsIndexProps) {
+    const payments: PaymentRow[] = paymentData?.data ?? [];
 
     return (
         <AdminLayout header={<h2 className="font-semibold text-xl text-foreground leading-tight">Payments</h2>}>
