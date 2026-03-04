@@ -65,3 +65,26 @@ resources/js/
    - Keep components small (under 150-200 lines). Break them down into smaller sub-components in the `Components/domain/` folder.
    - Use `useMemo` and `useCallback` to prevent unnecessary re-renders in heavy components (like tables or exam taking interfaces).
    - Remove all `console.log()` statements before finalizing the code.
+8. Accessibility (a11y):
+
+Ensure all custom components are fully accessible.
+
+Use proper aria-labels, roles, and semantic HTML (e.g., <button> instead of <div onClick={...}>).
+
+All interactive elements MUST be keyboard navigable (tab focusable).
+
+9. Loading & Error States:
+
+Always implement Skeleton loaders for initial data fetching instead of full-page spinners to improve Perceived Performance.
+
+Gracefully handle unexpected frontend errors using React Error Boundaries. Fallback UI should match the system's design language.
+
+10. Documentation & Comments:
+
+Write concise JSDoc comments for complex custom hooks (hooks/) and utility functions (lib/).
+
+Avoid obvious inline comments; let the code be self-documenting through proper naming conventions.
+
+11. Security (XSS Prevention):
+
+NEVER use dangerouslySetInnerHTML unless explicitly required and the HTML payload is sanitized via a trusted library (e.g., DOMPurify).
