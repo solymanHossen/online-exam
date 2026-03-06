@@ -16,7 +16,7 @@ class ProcessPaymentRequest extends FormRequest
         return [
             'gateway' => ['required', 'in:stripe,paypal'],
             'exam_id' => ['required', 'exists:exams,id'],
-            'type' => ['nullable', 'string', 'max:100'],
+            'type' => ['nullable', 'string', 'max:50'],
             'description' => ['nullable', 'string', 'max:1000'],
         ];
     }

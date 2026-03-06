@@ -25,9 +25,9 @@ class UpdateStudentRequest extends FormRequest
 
         return [
             'batch_id' => 'sometimes|required|exists:batches,id',
-            'roll_number' => 'sometimes|required|string|max:50|unique:students,roll_number,'.$studentId,
+            'roll_number' => ['sometimes', 'required', 'string', 'max:50', \Illuminate\Validation\Rule::unique('students', 'roll_number')->ignore($this->route('student'))],
             'admission_date' => 'sometimes|required|date',
-            'status' => 'sometimes|required|string|in:active,inactive,graduated,suspended',
+            'status' => ['sometimes', 'required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentStatus::class)],
         ];
     }
 }

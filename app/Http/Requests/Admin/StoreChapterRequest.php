@@ -23,7 +23,7 @@ class StoreChapterRequest extends FormRequest
     {
         return [
             'subject_id' => 'required|exists:subjects,id',
-            'name' => 'required|string|max:200',
+            'name' => 'required|string|max:150',
             'order' => 'required|integer|min:1',
             'description' => 'nullable|string',
         ];

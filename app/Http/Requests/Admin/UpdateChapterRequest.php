@@ -22,7 +22,7 @@ class UpdateChapterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'sometimes|required|string|max:200',
+            'name' => 'sometimes|required|string|max:150',
             'order' => 'sometimes|required|integer|min:1',
             'description' => 'nullable|string',
         ];

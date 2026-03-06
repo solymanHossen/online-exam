@@ -26,7 +26,7 @@ class StoreSubjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:150',
+            'name' => 'required|string|max:120',
             'code' => 'required|string|max:50|unique:subjects',
         ];
     }

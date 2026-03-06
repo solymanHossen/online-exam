@@ -31,13 +31,14 @@ class UpdateExamRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'sometimes|required|string|max:255',
+            'title' => 'sometimes|required|string|max:200',
+            'description' => 'nullable|string',
             'batch_id' => 'sometimes|required|exists:batches,id',
             'price' => 'nullable|numeric|min:0',
-            'total_marks' => 'sometimes|required|integer|min:0',
+            'total_marks' => 'sometimes|required|numeric|min:0',
             'duration_minutes' => 'sometimes|required|integer|min:1',
-            'pass_marks' => 'sometimes|required|integer|min:0|lte:total_marks',
-            'status' => 'sometimes|required|string|in:draft,published,archived',
+            'pass_marks' => 'sometimes|required|numeric|min:0|lte:total_marks',
+            'status' => ['sometimes', 'required', \Illuminate\Validation\Rule::enum(\App\Enums\ExamStatus::class)],
             'start_time' => 'sometimes|required|date',
             // Fix: require start_time if end_time is present, otherwise 'after:start_time' will fail on partial PUT/PATCH requests
             'end_time' => 'sometimes|required_with:start_time|date|after:start_time',

@@ -25,11 +25,9 @@ class UpdateSubjectRequest extends FormRequest
      */
     public function rules(): array
     {
-        $subjectId = $this->route('subject') ? $this->route('subject')->id : null;
-
         return [
-            'name' => 'required|string|max:150',
-            'code' => 'required|string|max:50|unique:subjects,code,'.$subjectId,
+            'name' => 'required|string|max:120',
+            'code' => ['sometimes', 'required', 'string', 'max:50', \Illuminate\Validation\Rule::unique('subjects', 'code')->ignore($this->route('subject'))],
         ];
     }
 }

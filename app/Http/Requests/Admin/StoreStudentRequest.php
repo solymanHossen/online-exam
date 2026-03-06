@@ -28,7 +28,7 @@ class StoreStudentRequest extends FormRequest
             'batch_id' => 'required|exists:batches,id',
             'roll_number' => 'required|string|max:50|unique:students',
             'admission_date' => 'required|date',
-            'status' => 'required|string|in:active,inactive,graduated,suspended',
+            'status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\StudentStatus::class)],
         ];
     }
 }

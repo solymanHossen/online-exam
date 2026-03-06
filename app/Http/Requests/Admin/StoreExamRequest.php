@@ -31,13 +31,14 @@ class StoreExamRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => 'required|string|max:255',
+            'title' => 'required|string|max:200',
+            'description' => 'nullable|string',
             'batch_id' => 'required|exists:batches,id',
             'price' => 'nullable|numeric|min:0',
-            'total_marks' => 'required|integer|min:0',
+            'total_marks' => 'required|numeric|min:0',
             'duration_minutes' => 'required|integer|min:1',
-            'pass_marks' => 'required|integer|min:0|lte:total_marks',
-            'status' => 'required|string|in:draft,published,archived',
+            'pass_marks' => 'required|numeric|min:0|lte:total_marks',
+            'status' => ['required', \Illuminate\Validation\Rule::enum(\App\Enums\ExamStatus::class)],
             'start_time' => 'required|date',
             'end_time' => 'required|date|after:start_time',
         ];
