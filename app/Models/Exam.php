@@ -41,6 +41,10 @@ class Exam extends Model
         'shuffle_options' => 'boolean',
         'show_result_immediately' => 'boolean',
         'status' => ExamStatus::class,
+        'total_marks' => 'decimal:2',
+        'duration_minutes' => 'integer',
+        'pass_marks' => 'decimal:2',
+        'price' => 'decimal:2',
     ];
 
     public function questions(): HasMany

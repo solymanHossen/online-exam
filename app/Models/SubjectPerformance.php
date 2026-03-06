@@ -12,6 +12,10 @@ class SubjectPerformance extends Model
 
     protected $fillable = ['user_id', 'subject_id', 'proficiency_level'];
 
+    protected $casts = [
+        'proficiency_level' => 'decimal:2',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

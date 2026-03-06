@@ -26,6 +26,12 @@ class Question extends Model
         'is_active',
     ];
 
+    protected $casts = [
+        'is_active' => 'boolean',
+        'marks' => 'decimal:2',
+        'negative_marks' => 'decimal:2',
+    ];
+
     public function options(): HasMany
     {
         return $this->hasMany(QuestionOption::class);

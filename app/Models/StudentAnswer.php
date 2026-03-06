@@ -21,6 +21,7 @@ class StudentAnswer extends Model
 
     protected $casts = [
         'is_correct' => 'boolean',
+        'marks_awarded' => 'decimal:2',
     ];
 
     public function attempt(): BelongsTo

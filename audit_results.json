@@ -1,0 +1,8 @@
+{
+    "App\\Models\\Student": [
+        "Missing cast for date\/datetime column 'admission_date'"
+    ],
+    "App\\Models\\User": [
+        "Missing $fillable fields (exist in table): email_verified_at"
+    ]
+}

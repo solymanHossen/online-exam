@@ -12,6 +12,11 @@ class ExamRanking extends Model
 
     protected $fillable = ['exam_id', 'user_id', 'rank', 'total_score'];
 
+    protected $casts = [
+        'rank' => 'integer',
+        'total_score' => 'decimal:2',
+    ];
+
     public function exam(): BelongsTo
     {
         return $this->belongsTo(Exam::class);

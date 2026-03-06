@@ -12,6 +12,11 @@ class QuestionStatistic extends Model
 
     protected $fillable = ['question_id', 'times_attempted', 'times_correct'];
 
+    protected $casts = [
+        'times_attempted' => 'integer',
+        'times_correct' => 'integer',
+    ];
+
     public function question(): BelongsTo
     {
         return $this->belongsTo(Question::class);

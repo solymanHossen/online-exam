@@ -27,6 +27,7 @@ class ExamAttempt extends Model
         'start_time' => 'datetime',
         'end_time' => 'datetime',
         'is_completed' => 'boolean',
+        'total_score' => 'decimal:2',
     ];
 
     public function exam(): BelongsTo
