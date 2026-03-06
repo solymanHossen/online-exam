@@ -32,10 +32,10 @@ export default function Authenticated({
         useState(false);
 
     return (
-        <div className="min-h-screen bg-background text-foreground">
-            <nav className="border-b border-border bg-card">
+        <div className="min-h-screen bg-muted/30 text-foreground">
+            <nav className="border-b border-border/40 bg-background/80 backdrop-blur-xl sticky top-0 z-50">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-16 justify-between">
+                    <div className="flex h-[72px] justify-between">
                         <div className="flex items-center gap-6">
                             <div className="flex shrink-0 items-center">
                                 <Link href="/" aria-label="Go to home">
@@ -143,14 +143,14 @@ export default function Authenticated({
             </nav>
 
             {header && (
-                <header className={cn('border-b border-border bg-card')}>
-                    <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-                        {header}
-                    </div>
+                <header className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-8 mb-2">
+                    {header}
                 </header>
             )}
 
-            <main>{children}</main>
+            <main className="py-8 sm:py-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 space-y-8">
+                {children}
+            </main>
         </div>
     );
 }

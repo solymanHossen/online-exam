@@ -78,7 +78,7 @@ export default function AdminLayout({ children, header }: Props) {
                     <Link
                         key={item.href}
                         href={item.href}
-                        className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group relative ${isActive
+                        className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${isActive
                                 ? 'bg-primary text-primary-foreground font-medium shadow-sm'
                                 : 'text-muted-foreground hover:bg-secondary/80 hover:text-foreground'
                             }`}
@@ -95,7 +95,7 @@ export default function AdminLayout({ children, header }: Props) {
     );
 
     return (
-        <div className="min-h-screen bg-background text-foreground flex overflow-hidden">
+        <div className="min-h-screen bg-muted/30 text-foreground flex overflow-hidden">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex w-72 flex-col border-r bg-card shadow-sm z-10 transition-all duration-300">
                 <div className="h-16 flex items-center px-6 border-b border-border/50">
@@ -103,7 +103,7 @@ export default function AdminLayout({ children, header }: Props) {
                         <div className="bg-primary/10 p-2 rounded-lg">
                             <GraduationCap className="h-6 w-6" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight">ExamOS</span>
+                        <span className="auth-font text-xl font-bold tracking-tight">ExamOS</span>
                     </div>
                 </div>
 
@@ -131,7 +131,7 @@ export default function AdminLayout({ children, header }: Props) {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Top Header */}
-                <header className="h-16 flex items-center justify-between px-4 sm:px-6 z-20 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b shadow-sm sticky top-0">
+                <header className="h-[72px] flex items-center justify-between px-6 z-20 bg-background/80 backdrop-blur-xl border-b border-border/40 shadow-sm sticky top-0">
                     <div className="flex items-center gap-4">
                         {/* Mobile Menu Trigger */}
                         <div className="lg:hidden">
@@ -220,7 +220,12 @@ export default function AdminLayout({ children, header }: Props) {
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto bg-muted/20 p-4 sm:p-6 lg:p-8">
+                <main className="flex-1 overflow-y-auto bg-transparent p-6 lg:p-8 space-y-6">
+                    {header && (
+                        <div className="mb-2 max-w-7xl mx-auto w-full">
+                            {header}
+                        </div>
+                    )}
                     <div className="max-w-7xl mx-auto w-full animate-in fade-in duration-500">
                         {children}
                     </div>
