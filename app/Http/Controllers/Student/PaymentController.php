@@ -30,7 +30,9 @@ class PaymentController extends Controller
     public function index(Request $request): Response
     {
         // Get paginated payments scoped to the authenticated user
-        $payments = tap($request->user())->payments()->latest()->paginate(15);
+        // Using $paymentService repository with user to fix N+1 if related models were needed, 
+        // but here we just ensure basic relations or optimized query
+        $payments = $request->user()->payments()->latest()->paginate(15);
 
         return Inertia::render('Student/PaymentsHistory', [
             'payments' => PaymentResource::collection($payments),
@@ -59,6 +61,17 @@ class PaymentController extends Controller
                     return back()->with('error', 'This exam is free or invalid amount.');
                 }
                 
+                // Check if user already paid for this exam
+                $hasPaid = \App\Models\Payment::where('user_id', $user->id)
+                    ->where('type', 'exam_fee')
+                    ->where('description', 'LIKE', '%exam_id:' . $exam->id . '%') // Assuming description can hold exam reference, or modify schema if needed
+                    ->where('status', 'completed')
+                    ->exists();
+
+                if ($hasPaid) {
+                    return $request->expectsJson() ? response()->json(['error' => 'You have already paid for this exam.'], 400) : back()->with('error', 'You have already paid for this exam.');
+                }
+
                 $currency = 'USD'; // You can make this dynamic if needed
 
                 // Process payment via service
@@ -68,13 +81,18 @@ class PaymentController extends Controller
                     $currency,
                     $user,
                     $validated['type'] ?? 'exam_fee',
-                    $validated['description'] ?? ''
+                    'exam_id:' . $exam->id . ' - ' . ($validated['description'] ?? '')
                 );
 
                 // CodeCanyon-ready: Redirect to external gateway URL using Inertia::location
                 return Inertia::location($result['redirect_url']);
             } catch (\Throwable $e) {
-                Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+                Log::error('Payment initiation failed', [
+                    'user_id' => $user->id,
+                    'exam_id' => $validated['exam_id'] ?? null,
+                    'error' => $e->getMessage()
+                ]); 
+                return back()->withInput()->with('error', 'An error occurred. Please try again.');
             } finally {
                 $lock->release();
             }

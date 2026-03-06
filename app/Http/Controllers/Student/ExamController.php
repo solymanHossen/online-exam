@@ -45,6 +45,9 @@ class ExamController extends Controller
     {
         Gate::authorize('view', $exam);
 
+        abort_if($exam->status !== \App\Enums\ExamStatus::PUBLISHED, 403, 'This exam is not active.');
+        abort_if(now()->lessThan($exam->start_time) || now()->greaterThan($exam->end_time), 403, 'This exam is currently outside of its availability window.');
+
         // Task 1: N+1 Query Elimination using the Repository
         $optimizedExam = $this->examRepository->getExamWithQuestions($exam->id);
 

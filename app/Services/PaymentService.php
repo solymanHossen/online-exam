@@ -41,29 +41,41 @@ class PaymentService extends BaseService
      */
     public function processPayment(string $gatewayName, float $amount, string $currency, User $user, string $type = 'exam_fee', string $description = ''): array
     {
-        return DB::transaction(function () use ($gatewayName, $amount, $currency, $user, $type, $description) {
+        try {
             $gateway = $this->gatewayFactory->make($gatewayName);
-
+            
+            // External call handled safely
             $gatewayResponse = $gateway->charge($amount, $currency, [
                 'return_url' => route('student.payments.index'), // Or a dedicated callback route
             ]);
+            
+            return DB::transaction(function () use ($gatewayName, $amount, $currency, $user, $type, $description, $gatewayResponse) {
 
-            $payment = $this->repository->create([
-                'user_id' => $user->id,
+                $payment = $this->repository->create([
+                    'user_id' => $user->id,
+                    'amount' => $amount,
+                    'currency' => $currency,
+                    'status' => 'pending',
+                    'transaction_id' => $gatewayResponse['transaction_id'],
+                    'gateway_name' => $gatewayName,
+                    'type' => $type,
+                    'description' => $description,
+                ]);
+
+                return [
+                    'redirect_url' => $gatewayResponse['redirect_url'],
+                    'payment' => $payment->toArray(),
+                ];
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Gateway charge failed', [
+                'gateway' => $gatewayName,
                 'amount' => $amount,
-                'currency' => $currency,
-                'status' => 'pending',
-                'transaction_id' => $gatewayResponse['transaction_id'],
-                'gateway_name' => $gatewayName,
-                'type' => $type,
-                'description' => $description,
+                'user_id' => $user->id,
+                'error' => $e->getMessage()
             ]);
-
-            return [
-                'redirect_url' => $gatewayResponse['redirect_url'],
-                'payment' => $payment->toArray(),
-            ];
-        });
+            throw $e; // Re-throw to be caught by the controller
+        }
     }
 
     /**

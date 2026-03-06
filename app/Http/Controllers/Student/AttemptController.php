@@ -21,8 +21,9 @@ class AttemptController extends Controller
     {
         Gate::authorize('update', $attempt);
 
+        // Add 10 seconds latency grace period
         abort_if(
-            $attempt->is_completed || now()->greaterThan($attempt->end_time),
+            $attempt->is_completed || now()->greaterThan($attempt->end_time->addSeconds(10)),
             403,
             __('You cannot modify answers for a completed or expired exam attempt.')
         );
@@ -30,19 +31,21 @@ class AttemptController extends Controller
         try {
             $validated = $request->validated();
 
-            StudentAnswer::updateOrCreate(
-                [
-                    'exam_attempt_id' => $attempt->id,
-                    'question_id' => $validated['question_id'],
-                ],
-                [
-                    'selected_option_id' => $validated['selected_option_id'],
-                ]
-            );
+            DB::transaction(function () use ($attempt, $validated) {
+                StudentAnswer::updateOrCreate(
+                    [
+                        'exam_attempt_id' => $attempt->id,
+                        'question_id' => $validated['question_id'],
+                    ],
+                    [
+                        'selected_option_id' => $validated['selected_option_id'],
+                    ]
+                );
+            });
 
             return response()->json(['message' => __('Answer saved successfully.')]);
         } catch (\Throwable $e) {
-            Log::error($e->getMessage());
+            Log::error('Answer save failed', ['attempt_id' => $attempt->id, 'error' => $e->getMessage()]);
             return response()->json(['error' => __('An error occurred. Please try again.')], 500);
         }
     }
@@ -63,17 +66,20 @@ class AttemptController extends Controller
                     return redirect()->route('student.exams.index')->with('error', __('Exam is already submitted.'));
                 }
 
-                $attempt->update([
-                    'is_completed' => true,
-                    'end_time' => min($attempt->end_time, now()), // Capture actual submit time if earlier
-                ]);
+                DB::transaction(function () use ($attempt) {
+                    $attempt->update([
+                        'is_completed' => true,
+                        'end_time' => min($attempt->end_time, now()), // Capture actual submit time if earlier
+                    ]);
+                });
 
                 // Dispatch background job to evaluate
                 EvaluateExamAttempt::dispatch($attempt);
 
                 return redirect()->route('student.exams.index')->with('success', __('Exam submitted successfully! Your results will be available shortly.'));
             } catch (\Throwable $e) {
-                Log::error($e->getMessage()); return back()->withInput()->with('error', 'An error occurred. Please try again.');
+                Log::error('Exam submission failed', ['attempt_id' => $attempt->id, 'error' => $e->getMessage()]); 
+                return back()->withInput()->with('error', 'An error occurred. Please try again.');
             } finally {
                 $lock->release();
             }
