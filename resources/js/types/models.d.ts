@@ -107,3 +107,52 @@ export interface ExamDTO {
     negative_enabled: boolean;
     questions: ExamQuestionNode[];
 }
+
+export type ExamStatus = 'draft' | 'published' | 'completed' | 'cancelled';
+
+export interface StudentListItem {
+    id: string;
+    roll_number: string;
+    status: string;
+    batch_id: string;
+    user?: {
+        id?: string;
+        name?: string;
+        email?: string;
+    } | null;
+    batch?: {
+        id: string;
+        name: string;
+    } | null;
+}
+
+export interface ExamBuilderQuestion {
+    id: string;
+    question_text: string;
+    difficulty: QuestionDifficulty;
+    marks: number;
+    negative_marks: number;
+    question_image?: string | null;
+    subject?: Pick<Subject, 'id' | 'name' | 'code'> | null;
+    chapter?: Pick<Chapter, 'id' | 'name' | 'subject_id'> | null;
+}
+
+export interface ExamBuilderExam {
+    id: string;
+    title: string;
+    description?: string | null;
+    batch_id?: string | null;
+    price?: number | null;
+    total_marks: number;
+    duration_minutes: number;
+    pass_marks: number;
+    negative_enabled: boolean;
+    shuffle_questions?: boolean;
+    shuffle_options?: boolean;
+    show_result_immediately?: boolean;
+    start_time: string;
+    end_time: string;
+    status: ExamStatus;
+    question_ids?: string[];
+    selected_students?: string[];
+}

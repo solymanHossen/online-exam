@@ -34,6 +34,8 @@ class UpdateExamRequest extends FormRequest
             'title' => 'sometimes|required|string|max:200',
             'description' => 'nullable|string',
             'batch_id' => 'sometimes|required|exists:batches,id',
+            'question_ids' => 'nullable|array|min:1',
+            'question_ids.*' => 'exists:questions,id',
             'price' => 'nullable|numeric|min:0',
             'total_marks' => 'sometimes|required|numeric|min:0',
             'duration_minutes' => 'sometimes|required|integer|min:1',
