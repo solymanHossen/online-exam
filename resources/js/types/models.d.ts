@@ -124,6 +124,49 @@ export interface ExamDTO {
     questions: ExamQuestionNode[];
 }
 
+export interface AnalyticsLeaderboardEntry {
+    rank: number;
+    user_id: string;
+    student_name: string;
+    avatar?: string | null;
+    batch_id?: string | null;
+    batch_name?: string | null;
+    exams_count: number;
+    total_score: number;
+    average_score: number;
+    best_score: number;
+}
+
+export interface SubjectPerformanceMetric {
+    subject_id: string;
+    subject_name: string;
+    proficiency_level: number;
+    attempted: number;
+    correct: number;
+    correct_rate: number;
+}
+
+export interface QuestionInsight {
+    id: string;
+    question_id: string;
+    question_text: string;
+    times_attempted: number;
+    times_correct: number;
+    accuracy: number;
+    subject_name?: string | null;
+    chapter_name?: string | null;
+}
+
+export interface PersonalAnalyticsSummary {
+    completed_exams: number;
+    average_score: number;
+    best_score: number;
+    batch_name?: string | null;
+    subjects_mastered: number;
+    global_rank: number | null;
+    batch_rank: number | null;
+}
+
 export type ExamStatus = 'draft' | 'published' | 'completed' | 'cancelled';
 
 export interface StudentListItem {

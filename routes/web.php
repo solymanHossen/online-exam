@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LocalizationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Student\AnalyticsController as StudentAnalyticsController;
 use App\Http\Controllers\Student\AttemptController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
@@ -132,6 +133,8 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
  * Routes specifically designed for students interacting with exams and payments.
  */
 Route::middleware(['auth', 'verified'])->prefix('student')->name('student.')->group(function () {
+
+    Route::get('analytics', [StudentAnalyticsController::class, 'index'])->name('analytics');
 
     // Handles the listing of available exams and entering the actual exam room interface
     Route::controller(StudentExamController::class)->prefix('exams')->name('exams.')->group(function () {
