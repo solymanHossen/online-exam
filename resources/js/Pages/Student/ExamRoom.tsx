@@ -1,8 +1,28 @@
 import { Head, router } from '@inertiajs/react';
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Clock, CheckCircle, ChevronRight, ChevronLeft, WifiOff, ShieldAlert } from 'lucide-react';
 import axios from 'axios';
-import { ExamAttemptDTO, ExamDTO, ExamOption, ExamQuestionNode } from '@/types/models';
+import DOMPurify from 'dompurify';
+import {
+    Bookmark,
+    CheckCircle2,
+    ChevronLeft,
+    ChevronRight,
+    CircleDot,
+    Clock3,
+    Flag,
+    LoaderCircle,
+    Maximize2,
+    PanelRightOpen,
+    Save,
+    SendHorizontal,
+    ShieldAlert,
+    Sparkles,
+    WifiOff,
+} from 'lucide-react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+
+import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card, CardContent } from '@/Components/ui/Card';
 import {
     Dialog,
     DialogContent,
@@ -10,67 +30,175 @@ import {
     DialogFooter,
     DialogHeader,
     DialogTitle,
-} from "@/Components/ui/Dialog";
-import { Button } from '@/Components/ui/Button';
+} from '@/Components/ui/Dialog';
+import { ScrollArea } from '@/Components/ui/ScrollArea';
+import {
+    Sheet,
+    SheetContent,
+    SheetDescription,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
+} from '@/Components/ui/Sheet';
+import { useTranslation } from '@/hooks/useTranslation';
+import { cn } from '@/lib/utils';
+import type { ExamAttemptDTO, ExamDTO, ExamOption, ExamQuestionNode } from '@/types/models';
 
 interface ExamRoomProps {
     exam: ExamDTO;
     attempt: ExamAttemptDTO;
 }
 
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'offline' | 'error';
+
+type SubmitDialogState = {
+    open: boolean;
+    forced: boolean;
+    reason?: string;
+};
+
+function sanitizeHtml(value: string) {
+    return DOMPurify.sanitize(value);
+}
+
 export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
-    // --- 1. Timing Logic ---
+    const { t } = useTranslation();
+    const localKey = `exam_answers_${attempt.id}`;
+    const reviewKey = `exam_review_${attempt.id}`;
+
     const calculateTimeLeft = useCallback(() => {
         const end = new Date(attempt.end_time).getTime();
-        const now = new Date().getTime();
+        const now = Date.now();
         const diff = Math.floor((end - now) / 1000);
+
         return diff > 0 ? diff : 0;
     }, [attempt.end_time]);
 
+    const getInitialAnswers = useCallback(() => {
+        const serverAnswers: Record<string, string> = {};
+
+        attempt.answers?.forEach((answer) => {
+            if (answer.selected_option_id) {
+                serverAnswers[answer.question_id] = answer.selected_option_id;
+            }
+        });
+
+        if (typeof window === 'undefined') {
+            return serverAnswers;
+        }
+
+        try {
+            const localAnswers = localStorage.getItem(localKey);
+            return localAnswers
+                ? { ...serverAnswers, ...(JSON.parse(localAnswers) as Record<string, string>) }
+                : serverAnswers;
+        } catch {
+            return serverAnswers;
+        }
+    }, [attempt.answers, localKey]);
+
+    const getInitialReviewState = useCallback(() => {
+        if (typeof window === 'undefined') {
+            return [] as string[];
+        }
+
+        try {
+            const stored = localStorage.getItem(reviewKey);
+            return stored ? (JSON.parse(stored) as string[]) : [];
+        } catch {
+            return [] as string[];
+        }
+    }, [reviewKey]);
+
     const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    // --- 2. Offline Resilience State ---
-    const localKey = `exam_answers_${attempt.id}`;
-
-    const loadInitialAnswers = () => {
-        const serverAnswers: Record<string, string> = {};
-        if (attempt.answers) {
-            attempt.answers.forEach((ans) => {
-                if (ans.selected_option_id) {
-                    serverAnswers[ans.question_id] = ans.selected_option_id;
-                }
-            });
-        }
-
-        if (typeof window !== 'undefined') {
-            try {
-                const localData = localStorage.getItem(localKey);
-                if (localData) {
-                    const localAnswers = JSON.parse(localData);
-                    return { ...serverAnswers, ...localAnswers };
-                }
-            } catch {
-                return serverAnswers;
-            }
-        }
-        return serverAnswers;
-    };
-
-    const [answers, setAnswers] = useState<Record<string, string>>(loadInitialAnswers);
-    const [viewedQuestions, setViewedQuestions] = useState<Set<number>>(new Set([0]));
+    const [answers, setAnswers] = useState<Record<string, string>>(getInitialAnswers);
+    const [markedForReview, setMarkedForReview] = useState<string[]>(getInitialReviewState);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
-
-    // --- 3. Anti-Cheat State ---
     const [warningCount, setWarningCount] = useState(0);
     const [showWarningModal, setShowWarningModal] = useState(false);
+    const [isOffline, setIsOffline] = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false);
+    const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+    const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+    const [submitDialog, setSubmitDialog] = useState<SubmitDialogState>({ open: false, forced: false });
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const autoSubmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const forcedSubmitTriggeredRef = useRef(false);
+    const pendingAnswersRef = useRef<Record<string, string>>({});
 
-    // --- CSRF Keep Alive ---
+    const questions: ExamQuestionNode[] = useMemo(() => exam.questions ?? [], [exam.questions]);
+    const currentQuestionDetail = useMemo(
+        () => questions[currentQuestionIndex]?.question,
+        [currentQuestionIndex, questions],
+    );
+
+    const persistLocalState = useCallback((nextAnswers: Record<string, string>, nextMarked: string[]) => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        localStorage.setItem(localKey, JSON.stringify(nextAnswers));
+        localStorage.setItem(reviewKey, JSON.stringify(nextMarked));
+    }, [localKey, reviewKey]);
+
+    const saveAnswerInBackground = useCallback(async (questionId: string, optionId: string) => {
+        if (isSubmitting) {
+            return;
+        }
+
+        if (isOffline) {
+            pendingAnswersRef.current[questionId] = optionId;
+            setSaveStatus('offline');
+            return;
+        }
+
+        setSaveStatus('saving');
+
+        try {
+            await axios.post(route('student.attempts.save-answer', attempt.id), {
+                question_id: questionId,
+                selected_option_id: optionId,
+            });
+
+            delete pendingAnswersRef.current[questionId];
+            setLastSavedAt(new Date().toLocaleTimeString());
+            setSaveStatus('saved');
+        } catch {
+            pendingAnswersRef.current[questionId] = optionId;
+            setSaveStatus('error');
+        }
+    }, [attempt.id, isOffline, isSubmitting]);
+
+    const submitAttempt = useCallback(() => {
+        if (isSubmitting) {
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        if (timerRef.current) {
+            clearInterval(timerRef.current);
+        }
+
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        if (autoSubmitTimeoutRef.current) {
+            clearTimeout(autoSubmitTimeoutRef.current);
+        }
+
+        localStorage.removeItem(localKey);
+        localStorage.removeItem(reviewKey);
+
+        router.post(route('student.attempts.submit', attempt.id), {}, {
+            onFinish: () => setIsSubmitting(false),
+        });
+    }, [attempt.id, isSubmitting, localKey, reviewKey]);
+
     useEffect(() => {
-        // Ping the server every 15 minutes to keep the session alive
         const keepAliveInterval = setInterval(() => {
             axios.get('/sanctum/csrf-cookie').catch(() => {});
         }, 15 * 60 * 1000);
@@ -78,351 +206,691 @@ export default function ExamRoom({ exam, attempt }: ExamRoomProps) {
         return () => clearInterval(keepAliveInterval);
     }, []);
 
-    // --- Network Watcher ---
     useEffect(() => {
         const handleOnline = () => {
             setIsOffline(false);
-            // Optionally sync pending local answers when online
-            Object.entries(answers).forEach(([qId, oId]) => {
-                axios.post(route('student.attempts.save-answer', attempt.id), {
-                    question_id: qId,
-                    selected_option_id: oId
-                }).catch(() => { });
+
+            const pendingEntries = Object.entries(pendingAnswersRef.current);
+            if (pendingEntries.length === 0) {
+                setSaveStatus('saved');
+                return;
+            }
+
+            pendingEntries.forEach(([questionId, optionId]) => {
+                void saveAnswerInBackground(questionId, optionId);
             });
         };
-        const handleOffline = () => setIsOffline(true);
+
+        const handleOffline = () => {
+            setIsOffline(true);
+            setSaveStatus('offline');
+        };
 
         window.addEventListener('online', handleOnline);
         window.addEventListener('offline', handleOffline);
+
         return () => {
             window.removeEventListener('online', handleOnline);
             window.removeEventListener('offline', handleOffline);
         };
-    }, [answers, attempt.id]);
+    }, [saveAnswerInBackground]);
 
-    // --- Timer Tick ---
     useEffect(() => {
-        if (timeLeft <= 0 && !isSubmitting) {
-            submitExam("Time has expired. Your exam is being submitted automatically.");
-            return;
-        }
-
         timerRef.current = setInterval(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
 
         return () => {
-            if (timerRef.current) clearInterval(timerRef.current);
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
         };
-    }, [timeLeft, isSubmitting, calculateTimeLeft]);
+    }, [calculateTimeLeft]);
 
-    // --- Anti-Cheat Engine (Page Visibility) ---
+    useEffect(() => {
+        if (timeLeft === 0 && !isSubmitting && !forcedSubmitTriggeredRef.current) {
+            forcedSubmitTriggeredRef.current = true;
+            setSubmitDialog({
+                open: true,
+                forced: true,
+                reason: t(
+                    'student.exam_room.auto_submit_time_expired',
+                    {},
+                    'Time has expired. Your exam is being submitted automatically.',
+                ),
+            });
+        }
+    }, [isSubmitting, t, timeLeft]);
+
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden && !isSubmitting && timeLeft > 0) {
-                setWarningCount(prev => {
-                    const next = prev + 1;
+                setWarningCount((previous) => {
+                    const next = previous + 1;
+
                     if (next >= 3) {
-                        submitExam("Anti-cheat enforcement: Maximum tab switches exceeded.");
+                        setSubmitDialog({
+                            open: true,
+                            forced: true,
+                            reason: t(
+                                'student.exam_room.auto_submit_security',
+                                {},
+                                'Anti-cheat enforcement triggered automatic submission.',
+                            ),
+                        });
                     } else {
                         setShowWarningModal(true);
                     }
+
                     return next;
                 });
             }
         };
 
-        document.addEventListener("visibilitychange", handleVisibilityChange);
-        return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-    }, [isSubmitting, timeLeft]);
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [isSubmitting, t, timeLeft]);
 
-    // --- Interaction Handlers ---
-    const formatTime = (seconds: number) => {
-        const h = Math.floor(seconds / 3600);
-        const m = Math.floor((seconds % 3600) / 60);
-        const s = seconds % 60;
-
-        if (h > 0) {
-            return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    useEffect(() => {
+        if (!submitDialog.open || !submitDialog.forced || isSubmitting) {
+            return;
         }
-        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    };
 
-    const handleOptionSelect = async (questionId: string, optionId: string) => {
-        if (isSubmitting) return;
+        autoSubmitTimeoutRef.current = setTimeout(() => {
+            submitAttempt();
+        }, 1200);
 
-        const newAnswers = { ...answers, [questionId]: optionId };
-        setAnswers(newAnswers);
-
-        // Save to LocalStorage defensively
-        localStorage.setItem(localKey, JSON.stringify(newAnswers));
-
-        if (!isOffline) {
-            try {
-                await axios.post(route('student.attempts.save-answer', attempt.id), {
-                    question_id: questionId,
-                    selected_option_id: optionId
-                });
-            } catch {
-                return;
+        return () => {
+            if (autoSubmitTimeoutRef.current) {
+                clearTimeout(autoSubmitTimeoutRef.current);
             }
+        };
+    }, [isSubmitting, submitAttempt, submitDialog]);
+
+    useEffect(() => {
+        return () => {
+            if (autoSaveTimeoutRef.current) {
+                clearTimeout(autoSaveTimeoutRef.current);
+            }
+
+            if (timerRef.current) {
+                clearInterval(timerRef.current);
+            }
+
+            if (autoSubmitTimeoutRef.current) {
+                clearTimeout(autoSubmitTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    const formatTime = (seconds: number) => {
+        const hours = Math.floor(seconds / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+
+        if (hours > 0) {
+            return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    };
+
+    const requestFullscreen = async () => {
+        try {
+            await document.documentElement.requestFullscreen?.();
+        } catch {
+            // no-op
         }
     };
 
-    const submitExam = (reason?: string) => {
-        if (isSubmitting) return;
-        setIsSubmitting(true);
-        if (timerRef.current) clearInterval(timerRef.current);
-
-        // Clear local storage
-        localStorage.removeItem(localKey);
-
-        if (reason) {
-            alert(reason);
+    const handleOptionSelect = (questionId: string, optionId: string) => {
+        if (isSubmitting) {
+            return;
         }
 
-        router.post(route('student.attempts.submit', attempt.id), {}, {
-            onFinish: () => setIsSubmitting(false)
+        const nextAnswers = { ...answers, [questionId]: optionId };
+        setAnswers(nextAnswers);
+        persistLocalState(nextAnswers, markedForReview);
+
+        if (autoSaveTimeoutRef.current) {
+            clearTimeout(autoSaveTimeoutRef.current);
+        }
+
+        autoSaveTimeoutRef.current = setTimeout(() => {
+            void saveAnswerInBackground(questionId, optionId);
+        }, 700);
+    };
+
+    const handleToggleReview = () => {
+        if (!currentQuestionDetail) {
+            return;
+        }
+
+        const questionId = currentQuestionDetail.id;
+        const nextMarked = markedForReview.includes(questionId)
+            ? markedForReview.filter((id) => id !== questionId)
+            : [...markedForReview, questionId];
+
+        setMarkedForReview(nextMarked);
+        persistLocalState(answers, nextMarked);
+    };
+
+    const openSubmitDialog = () => {
+        setSubmitDialog({
+            open: true,
+            forced: false,
+            reason: t(
+                'student.exam_room.submit_reason',
+                {},
+                'This action will finalize your attempt and submit all saved answers.',
+            ),
         });
     };
 
-    const questions: ExamQuestionNode[] = useMemo(() => exam.questions, [exam.questions]);
-    const currentQuestionDetail = useMemo(
-        () => questions[currentQuestionIndex]?.question,
-        [questions, currentQuestionIndex],
+    if (!currentQuestionDetail) {
+        return (
+            <div className="grid min-h-screen place-items-center bg-slate-100 text-slate-500">
+                {t('student.exam_room.loading', {}, 'Loading exam room…')}
+            </div>
+        );
+    }
+
+    const isTimerCritical = timeLeft < 300 && timeLeft > 0;
+    const answeredCount = Object.keys(answers).length;
+    const reviewCount = markedForReview.length;
+    const unansweredCount = Math.max(questions.length - answeredCount, 0);
+    const isCurrentMarked = markedForReview.includes(currentQuestionDetail.id);
+
+    const saveStatusLabel = {
+        idle: t('student.exam_room.save_ready', {}, 'Ready'),
+        saving: t('student.exam_room.save_saving', {}, 'Saving answer…'),
+        saved: lastSavedAt
+            ? t('student.exam_room.save_saved_at', { time: lastSavedAt }, `Saved at ${lastSavedAt}`)
+            : t('student.exam_room.save_saved', {}, 'All changes saved'),
+        offline: t('student.exam_room.save_offline', {}, 'Offline: changes queued locally'),
+        error: t('student.exam_room.save_error', {}, 'Save failed. Will retry.'),
+    }[saveStatus];
+
+    const getQuestionStatus = (questionId: string) => {
+        if (markedForReview.includes(questionId)) {
+            return 'review';
+        }
+
+        if (answers[questionId]) {
+            return 'answered';
+        }
+
+        return 'unattempted';
+    };
+
+    const submitSummary = [
+        {
+            label: t('student.exam_room.summary_answered', {}, 'Answered'),
+            value: answeredCount,
+            tone: 'text-emerald-600',
+        },
+        {
+            label: t('student.exam_room.summary_review', {}, 'Marked for review'),
+            value: reviewCount,
+            tone: 'text-amber-600',
+        },
+        {
+            label: t('student.exam_room.summary_unanswered', {}, 'Unanswered'),
+            value: unansweredCount,
+            tone: 'text-slate-500',
+        },
+    ];
+
+    const navigatorContent = (
+        <div className="space-y-5">
+            <div className="flex items-center justify-between gap-3">
+                <div>
+                    <h3 className="text-lg font-semibold tracking-tight text-foreground">
+                        {t('student.exam_room.navigator_title', {}, 'Question Navigator')}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                        {t('student.exam_room.navigator_description', {}, 'Jump instantly to any question in the paper.')}
+                    </p>
+                </div>
+                <Badge variant="outline" className="rounded-full px-3 py-1">
+                    {answeredCount}/{questions.length}
+                </Badge>
+            </div>
+
+            <div className="grid grid-cols-5 gap-2 sm:grid-cols-6 xl:grid-cols-5">
+                {questions.map((question, index) => {
+                    const status = getQuestionStatus(question.question.id);
+                    const isCurrent = currentQuestionIndex === index;
+
+                    return (
+                        <button
+                            key={question.question.id}
+                            type="button"
+                            onClick={() => setCurrentQuestionIndex(index)}
+                            className={cn(
+                                'aspect-square rounded-2xl border text-sm font-semibold transition-all duration-200',
+                                status === 'answered' && 'border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+                                status === 'review' && 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100',
+                                status === 'unattempted' && 'border-slate-200 bg-white text-slate-500 hover:border-slate-300 hover:bg-slate-50',
+                                isCurrent && 'border-primary bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2',
+                            )}
+                            aria-label={t('student.exam_room.go_to_question', { number: index + 1 }, `Go to question ${index + 1}`)}
+                        >
+                            {index + 1}
+                        </button>
+                    );
+                })}
+            </div>
+
+            <div className="rounded-3xl border border-border/60 bg-muted/10 p-4">
+                <div className="space-y-3 text-sm">
+                    {[
+                        {
+                            label: t('student.exam_room.legend_unattempted', {}, 'Unattempted'),
+                            value: unansweredCount,
+                            swatch: 'bg-slate-300',
+                        },
+                        {
+                            label: t('student.exam_room.legend_answered', {}, 'Answered'),
+                            value: answeredCount,
+                            swatch: 'bg-emerald-500',
+                        },
+                        {
+                            label: t('student.exam_room.legend_review', {}, 'Marked for Review'),
+                            value: reviewCount,
+                            swatch: 'bg-amber-500',
+                        },
+                    ].map((item) => (
+                        <div key={item.label} className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <span className={cn('h-3 w-3 rounded-full', item.swatch)} />
+                                <span className="font-medium text-foreground">{item.label}</span>
+                            </div>
+                            <span className="text-muted-foreground">{item.value}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
     );
-    const skippedCount = useMemo(
-        () => Array.from(viewedQuestions).filter(idx => !answers[questions[idx].question.id] && idx !== currentQuestionIndex).length,
-        [viewedQuestions, answers, questions, currentQuestionIndex],
-    );
-
-    useEffect(() => {
-        setViewedQuestions(prev => new Set(prev).add(currentQuestionIndex));
-    }, [currentQuestionIndex]);
-
-    if (!currentQuestionDetail) return <div>Loading exam engine...</div>;
-
-    const isTimerCritical = timeLeft < 300 && timeLeft > 0; // Less than 5 minutes
 
     return (
-        <div className="min-h-screen bg-slate-50 flex flex-col font-sans select-none pb-20">
-            <Head title={`Exam Room - ${exam.title}`} />
+        <div className="h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(79,70,229,0.12),_transparent_26%),linear-gradient(180deg,_rgba(248,250,252,1)_0%,_rgba(241,245,249,1)_100%)] text-foreground select-none">
+            <Head title={t('student.exam_room.head_title', { title: exam.title }, `Exam Room - ${exam.title}`)} />
 
-            {/* Anti-Cheat Modal */}
-            <Dialog open={showWarningModal} onOpenChange={(open) => {
-                // Prevent user from dismissing the modal by clicking outside
-                // They must click the required Button
-                if (open) setShowWarningModal(true);
-            }}>
-                <DialogContent className="sm:max-w-md [&>button.absolute]:hidden">
+            <Dialog open={showWarningModal} onOpenChange={(open) => open && setShowWarningModal(true)}>
+                <DialogContent className="rounded-3xl sm:max-w-md [&>button.absolute]:hidden">
                     <DialogHeader>
-                        <DialogTitle className="text-red-600 flex items-center gap-2 text-xl pb-2 border-b">
+                        <DialogTitle className="flex items-center gap-2 border-b pb-2 text-xl text-red-600">
                             <ShieldAlert className="h-6 w-6" />
-                            Security Warning: Tab Switch Detected
+                            {t('student.exam_room.warning_title', {}, 'Security Warning: Tab Switch Detected')}
                         </DialogTitle>
-                        <DialogDescription className="text-base text-slate-700 leading-relaxed pt-2">
-                            You have switched tabs or left the exam window. This is a violation of the strict exam environment rules.
-                            <br /><br />
-                            <span className="font-semibold text-red-600">Warning {warningCount} of 3.</span> After 3 warnings, your exam will be automatically submitted without further notice.
+                        <DialogDescription className="pt-2 text-base leading-relaxed text-slate-700">
+                            {t(
+                                'student.exam_room.warning_body',
+                                {},
+                                'You switched tabs or left the exam window. This is treated as a strict exam environment warning.',
+                            )}
+                            <br />
+                            <br />
+                            <span className="font-semibold text-red-600">
+                                {t('student.exam_room.warning_count', { count: warningCount }, `Warning ${warningCount} of 3.`)}
+                            </span>{' '}
+                            {t(
+                                'student.exam_room.warning_after',
+                                {},
+                                'After 3 warnings, your exam will be submitted automatically.',
+                            )}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="sm:justify-start">
-                        <Button type="button" variant="destructive" onClick={() => setShowWarningModal(false)} className="w-full sm:w-auto font-semibold">
-                            I Understand, Return to Exam
+                        <Button
+                            type="button"
+                            variant="destructive"
+                            className="w-full rounded-2xl sm:w-auto"
+                            onClick={() => setShowWarningModal(false)}
+                        >
+                            {t('student.exam_room.return_exam', {}, 'Return to Exam')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Sticky Header & Premium Timer */}
-            <header className="bg-white/90 backdrop-blur-md shadow-sm border-b sticky top-0 z-40 transition-all border-slate-200">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div className="flex flex-col">
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-none">{exam.title}</h1>
-                        {isOffline && (
-                            <div className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-amber-700 bg-amber-50 py-1 px-2.5 rounded-md w-fit border border-amber-200 shadow-sm animate-pulse">
-                                <WifiOff size={14} /> Offline Mode - Answers saved locally
-                            </div>
-                        )}
+            <Dialog
+                open={submitDialog.open}
+                onOpenChange={(open) => !submitDialog.forced && setSubmitDialog((current) => ({ ...current, open }))}
+            >
+                <DialogContent className="rounded-3xl sm:max-w-xl">
+                    <DialogHeader>
+                        <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                            <Sparkles className="h-3.5 w-3.5" />
+                            {submitDialog.forced
+                                ? t('student.exam_room.auto_submit_badge', {}, 'Auto submit in progress')
+                                : t('student.exam_room.submit_badge', {}, 'Ready to submit')}
+                        </div>
+                        <DialogTitle className="text-2xl">
+                            {submitDialog.forced
+                                ? t('student.exam_room.auto_submit_title', {}, 'Submitting your exam')
+                                : t('student.exam_room.submit_title', {}, 'Submit exam attempt?')}
+                        </DialogTitle>
+                        <DialogDescription className="text-sm leading-6">
+                            {submitDialog.reason
+                                ?? t(
+                                    'student.exam_room.submit_description',
+                                    {},
+                                    'Review your current progress before sending the final attempt.',
+                                )}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="grid gap-3 sm:grid-cols-3">
+                        {submitSummary.map((item) => (
+                            <Card key={item.label} className="rounded-3xl border-border/60 shadow-sm">
+                                <CardContent className="p-5">
+                                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+                                    <p className={cn('mt-2 text-2xl font-semibold', item.tone)}>{item.value}</p>
+                                </CardContent>
+                            </Card>
+                        ))}
                     </div>
 
-                    <div className={`flex items-center justify-center gap-2 px-6 py-2 rounded-full font-mono text-xl font-bold border-2 transition-all shadow-sm ${isTimerCritical
-                            ? 'bg-red-50 text-red-600 border-red-200 animate-pulse'
-                            : 'bg-slate-50 text-slate-700 border-slate-200'
-                        }`}>
-                        <Clock size={20} className={isTimerCritical ? 'text-red-500' : 'text-slate-500'} />
-                        {timeLeft <= 0 ? '00:00' : formatTime(timeLeft)}
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Application Layout */}
-            <div className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
-
-                {/* Left Area (Actual Question view) - lg:col-span-3 */}
-                <div className="lg:col-span-3 lg:order-1 order-2">
-                    <div className="bg-white shadow-sm rounded-xl border border-slate-200 overflow-hidden flex flex-col min-h-[550px]">
-
-                        <div className="px-8 py-5 border-b border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4">
-                            <span className="font-bold text-indigo-700 text-lg">Question {currentQuestionIndex + 1} <span className="text-slate-400 font-medium">of {questions.length}</span></span>
-                            <div className="flex items-center gap-4 text-sm font-semibold text-slate-500 bg-white px-3 py-1.5 rounded-lg border shadow-sm">
-                                <span>Marks: <span className="text-emerald-600">+{currentQuestionDetail.marks}</span></span>
-                                {exam.negative_enabled && <span className="text-red-500 border-l border-slate-200 pl-3">-{currentQuestionDetail.negative_marks}</span>}
-                            </div>
-                        </div>
-
-                        <div className="p-8 flex-1">
-                            {/* Question Body */}
-                            <h2 className="text-xl text-slate-900 font-medium mb-8 leading-relaxed whitespace-pre-wrap selection:bg-indigo-100 selection:text-indigo-900">
-                                {currentQuestionDetail.question_text}
-                            </h2>
-
-                            {currentQuestionDetail.question_image && (
-                                <div className="mb-10">
-                                    <img src={`/storage/${currentQuestionDetail.question_image}`} alt="Question visual" className="max-w-full max-h-80 object-contain rounded-xl border border-slate-200 shadow-sm" draggable="false" />
-                                </div>
-                            )}
-
-                            {/* Options Mapping */}
-                            <div className="space-y-4">
-                                {currentQuestionDetail.options.map((opt: ExamOption) => {
-                                    const isSelected = answers[currentQuestionDetail.id] === opt.id;
-                                    return (
-                                        <label
-                                            key={opt.id}
-                                            className={`flex items-center p-5 border-2 rounded-xl cursor-pointer transition-all duration-200 ${isSelected
-                                                    ? 'border-indigo-600 bg-indigo-50/60 shadow-md ring-1 ring-indigo-600/30 ring-offset-1 z-10 relative'
-                                                    : 'border-slate-200 hover:border-indigo-300 hover:bg-slate-50/80 hover:shadow-sm'
-                                                }`}
-                                        >
-                                            <div className={`flex items-center justify-center w-6 h-6 rounded-full border-2 shrink-0 transition-colors ${isSelected ? 'border-indigo-600 bg-indigo-600' : 'border-slate-300'}`}>
-                                                {isSelected && <div className="w-2.5 h-2.5 bg-white rounded-full" />}
-                                            </div>
-                                            <input
-                                                type="radio"
-                                                name={`question-${currentQuestionDetail.id}`}
-                                                className="hidden"
-                                                checked={isSelected}
-                                                onChange={() => handleOptionSelect(currentQuestionDetail.id, opt.id)}
-                                                disabled={isSubmitting}
-                                            />
-                                            <div className="ml-5 flex flex-col sm:flex-row sm:items-center gap-4 w-full">
-                                                {opt.option_image && (
-                                                    <img src={`/storage/${opt.option_image}`} alt="Option visual" className="h-20 w-20 object-cover rounded-md border shadow-sm" draggable="false" />
-                                                )}
-                                                <span className={`text-lg transition-colors ${isSelected ? 'text-indigo-950 font-semibold' : 'text-slate-700'}`}>
-                                                    {opt.option_text}
-                                                </span>
-                                            </div>
-                                        </label>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* Navigation Footer */}
-                        <div className="p-6 border-t border-slate-100 bg-slate-50/50 flex flex-wrap justify-between items-center gap-4 mt-auto">
+                    <DialogFooter className="gap-3">
+                        {!submitDialog.forced ? (
                             <Button
                                 variant="outline"
-                                onClick={() => setCurrentQuestionIndex(prev => Math.max(0, prev - 1))}
-                                disabled={currentQuestionIndex === 0 || isSubmitting}
-                                className="px-6 py-6 text-base font-semibold shadow-sm text-slate-600 hover:text-slate-900"
+                                className="rounded-2xl"
+                                onClick={() => setSubmitDialog({ open: false, forced: false })}
                             >
-                                <ChevronLeft className="mr-2 h-5 w-5" /> Previous
+                                {t('student.exam_room.continue_exam', {}, 'Continue Exam')}
                             </Button>
-
-                            {currentQuestionIndex < questions.length - 1 ? (
-                                <Button
-                                    onClick={() => setCurrentQuestionIndex(prev => Math.min(questions.length - 1, prev + 1))}
-                                    disabled={isSubmitting}
-                                    className="px-8 py-6 text-base font-semibold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/20"
-                                >
-                                    Next Question <ChevronRight className="ml-2 h-5 w-5" />
-                                </Button>
+                        ) : null}
+                        <Button className="rounded-2xl" onClick={submitAttempt} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <LoaderCircle className="h-4 w-4 animate-spin" />
                             ) : (
-                                <Button
-                                    onClick={() => submitExam()}
-                                    disabled={isSubmitting}
-                                    className="px-8 py-6 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 tracking-wide"
-                                >
-                                    {isSubmitting ? 'Submitting Score...' : 'Finish & Submit Exam'} <CheckCircle className="ml-2 h-5 w-5" />
-                                </Button>
+                                <SendHorizontal className="h-4 w-4" />
                             )}
+                            {submitDialog.forced
+                                ? t('student.exam_room.submitting_now', {}, 'Submitting now…')
+                                : t('student.exam_room.confirm_submit', {}, 'Confirm Submit')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <div className="flex h-full flex-col">
+                <header className="sticky top-0 z-40 border-b border-white/60 bg-white/75 backdrop-blur-xl">
+                    <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-4 py-4 sm:px-6 xl:px-8">
+                        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                            <div className="space-y-2">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+                                    <Sparkles className="h-3.5 w-3.5" />
+                                    {t('student.exam_room.banner', {}, 'Distraction-free live exam room')}
+                                </div>
+                                <h1 className="text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{exam.title}</h1>
+                                <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                                    <span>
+                                        {t('student.exam_room.questions_count', { count: questions.length }, `${questions.length} questions`)}
+                                    </span>
+                                    <span>•</span>
+                                    <span>
+                                        {exam.negative_enabled
+                                            ? t('student.exam_room.negative_on', {}, 'Negative marking enabled')
+                                            : t('student.exam_room.negative_off', {}, 'No negative marking')}
+                                    </span>
+                                </div>
+                                {isOffline ? (
+                                    <div className="mt-2 flex w-fit items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 shadow-sm animate-pulse">
+                                        <WifiOff size={14} />
+                                        {t('student.exam_room.offline_mode', {}, 'Offline Mode - Answers saved locally')}
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 xl:justify-end">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-white px-4 py-2 text-sm text-muted-foreground shadow-sm">
+                                    {saveStatus === 'saving' ? (
+                                        <LoaderCircle className="h-4 w-4 animate-spin text-primary" />
+                                    ) : (
+                                        <Save className="h-4 w-4 text-primary" />
+                                    )}
+                                    <span>{saveStatusLabel}</span>
+                                </div>
+
+                                <div
+                                    className={cn(
+                                        'inline-flex items-center gap-3 rounded-full border px-5 py-3 font-mono text-xl font-bold shadow-sm transition-all',
+                                        isTimerCritical
+                                            ? 'animate-pulse border-red-200 bg-red-50 text-red-600'
+                                            : 'border-border/60 bg-white text-slate-800',
+                                    )}
+                                >
+                                    <Clock3 className={cn('h-5 w-5', isTimerCritical ? 'text-red-500' : 'text-primary')} />
+                                    {timeLeft <= 0 ? '00:00' : formatTime(timeLeft)}
+                                </div>
+
+                                <Button type="button" variant="outline" className="rounded-full" onClick={() => void requestFullscreen()}>
+                                    <Maximize2 className="h-4 w-4" />
+                                    {t('student.exam_room.fullscreen', {}, 'Fullscreen')}
+                                </Button>
+
+                                <div className="xl:hidden">
+                                    <Sheet>
+                                        <SheetTrigger asChild>
+                                            <Button type="button" variant="outline" className="rounded-full">
+                                                <PanelRightOpen className="h-4 w-4" />
+                                                {t('student.exam_room.navigator_button', {}, 'Navigator')}
+                                            </Button>
+                                        </SheetTrigger>
+                                        <SheetContent side="right" className="w-full sm:max-w-md">
+                                            <SheetHeader className="mb-6 border-b border-border/60 pb-4 text-left">
+                                                <SheetTitle>{t('student.exam_room.navigator_title', {}, 'Question Navigator')}</SheetTitle>
+                                                <SheetDescription>
+                                                    {t('student.exam_room.navigator_sheet', {}, 'Jump across questions without breaking focus.')}
+                                                </SheetDescription>
+                                            </SheetHeader>
+                                            {navigatorContent}
+                                        </SheetContent>
+                                    </Sheet>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid items-center gap-3 rounded-[28px] border border-white/60 bg-white/60 p-4 shadow-sm sm:grid-cols-3">
+                            <div className="space-y-1 rounded-3xl border border-border/60 bg-white px-4 py-3 shadow-sm">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('student.exam_room.progress_label', {}, 'Progress')}
+                                </p>
+                                <p className="text-lg font-semibold text-foreground">
+                                    {t('student.exam_room.progress_value', { count: answeredCount }, `${answeredCount} answered`)}
+                                </p>
+                            </div>
+                            <div className="space-y-1 rounded-3xl border border-border/60 bg-white px-4 py-3 shadow-sm">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('student.exam_room.review_label', {}, 'Review queue')}
+                                </p>
+                                <p className="text-lg font-semibold text-amber-600">
+                                    {t('student.exam_room.review_value', { count: reviewCount }, `${reviewCount} marked`)}
+                                </p>
+                            </div>
+                            <div className="space-y-1 rounded-3xl border border-border/60 bg-white px-4 py-3 shadow-sm">
+                                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                                    {t('student.exam_room.remaining_label', {}, 'Remaining')}
+                                </p>
+                                <p className="text-lg font-semibold text-slate-700">
+                                    {t('student.exam_room.remaining_value', { count: unansweredCount }, `${unansweredCount} unanswered`)}
+                                </p>
+                            </div>
                         </div>
                     </div>
-                </div>
+                </header>
 
-                {/* Right Area (Premium Question Nav Grid) - lg:col-span-1 */}
-                <div className="lg:col-span-1 lg:order-2 order-1">
-                    <div className="bg-white shadow-sm rounded-xl border border-slate-200 p-6 sticky top-28">
-                        <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-100">
-                            <h3 className="font-bold text-slate-800 tracking-tight text-lg">Questions Map</h3>
-                            <span className="text-sm font-bold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg border border-indigo-100 shadow-sm">
-                                {Object.keys(answers).length} / {questions.length}
-                            </span>
-                        </div>
+                <div className="mx-auto grid h-[calc(100vh-176px)] max-w-[1600px] flex-1 grid-cols-1 gap-6 overflow-hidden px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_320px] xl:px-8">
+                    <section className="overflow-hidden rounded-[32px] border border-white/60 bg-white/80 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl">
+                        <div className="flex h-full flex-col">
+                            <div className="border-b border-border/60 bg-slate-50/70 px-5 py-5 sm:px-8">
+                                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                    <div>
+                                        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">
+                                            {t('student.exam_room.question_label', { number: currentQuestionIndex + 1 }, `Question ${currentQuestionIndex + 1}`)}
+                                        </p>
+                                        <p className="mt-2 text-sm text-muted-foreground">
+                                            {t('student.exam_room.question_description', {}, 'Read carefully and select the best answer.')}
+                                        </p>
+                                    </div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <Badge className="rounded-full px-3 py-1">
+                                            +{currentQuestionDetail.marks}{' '}
+                                            {t('student.exam_room.marks', {}, 'marks')}
+                                        </Badge>
+                                        {exam.negative_enabled ? (
+                                            <Badge variant="outline" className="rounded-full border-red-200 px-3 py-1 text-red-600">
+                                                -{currentQuestionDetail.negative_marks} {t('student.exam_room.negative_marks', {}, 'negative')}
+                                            </Badge>
+                                        ) : null}
+                                        <Button
+                                            type="button"
+                                            variant={isCurrentMarked ? 'default' : 'outline'}
+                                            className="rounded-full"
+                                            onClick={handleToggleReview}
+                                        >
+                                            {isCurrentMarked ? <Flag className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+                                            {isCurrentMarked
+                                                ? t('student.exam_room.marked', {}, 'Marked for Review')
+                                                : t('student.exam_room.mark', {}, 'Mark for Review')}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2.5 max-h-[300px] overflow-y-auto pr-1 pb-2 custom-scrollbar">
-                            {questions.map((q: ExamQuestionNode, idx: number) => {
-                                const qid = q.question.id;
-                                const isAnswered = !!answers[qid];
-                                const isViewed = viewedQuestions.has(idx);
-                                const isSkipped = isViewed && !isAnswered && idx !== currentQuestionIndex;
-                                const isCurrent = currentQuestionIndex === idx;
+                            <ScrollArea className="flex-1">
+                                <div className="space-y-8 p-5 sm:p-8 lg:p-10">
+                                    <div className="space-y-6">
+                                        <div
+                                            className="question-editor prose prose-slate max-w-none text-lg leading-9 text-slate-900 prose-headings:tracking-tight prose-p:leading-9"
+                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(currentQuestionDetail.question_text) }}
+                                        />
 
-                                let btnClass = "bg-white text-slate-400 border-slate-200 hover:bg-slate-50 hover:border-indigo-300"; // Unanswered/Unviewed
+                                        {currentQuestionDetail.question_image ? (
+                                            <div className="overflow-hidden rounded-[28px] border border-border/60 bg-slate-50 p-3 shadow-sm">
+                                                <img
+                                                    src={currentQuestionDetail.question_image}
+                                                    alt={t('student.exam_room.question_image', {}, 'Question visual')}
+                                                    className="max-h-[420px] w-full rounded-[20px] object-contain"
+                                                    draggable="false"
+                                                />
+                                            </div>
+                                        ) : null}
+                                    </div>
 
-                                if (isCurrent && isAnswered) {
-                                    btnClass = "bg-emerald-600 text-white border-emerald-600 shadow-md ring-2 ring-emerald-600/20 ring-offset-1";
-                                } else if (isCurrent && !isAnswered) {
-                                    btnClass = "bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-600/20 ring-offset-1 animate-pulse";
-                                } else if (isAnswered) {
-                                    btnClass = "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 shadow-sm";
-                                } else if (isSkipped) {
-                                    btnClass = "bg-red-50 text-red-600 border-red-200 hover:bg-red-100 hover:border-red-300 shadow-sm";
-                                }
+                                    <div className="grid gap-4">
+                                        {currentQuestionDetail.options.map((option: ExamOption, index: number) => {
+                                            const isSelected = answers[currentQuestionDetail.id] === option.id;
+                                            const optionLabel = String.fromCharCode(65 + index);
 
-                                return (
-                                    <button
-                                        key={qid}
-                                        onClick={() => setCurrentQuestionIndex(idx)}
-                                        className={`w-full aspect-square rounded-[10px] flex items-center justify-center font-bold text-sm border-2 transition-all ${btnClass}`}
+                                            return (
+                                                <button
+                                                    key={option.id}
+                                                    type="button"
+                                                    onClick={() => handleOptionSelect(currentQuestionDetail.id, option.id)}
+                                                    disabled={isSubmitting}
+                                                    className={cn(
+                                                        'group relative flex w-full items-start gap-4 rounded-[28px] border-2 p-4 text-left transition-all duration-200 sm:p-5',
+                                                        isSelected
+                                                            ? 'border-primary bg-primary/[0.06] shadow-[0_20px_60px_-28px_rgba(79,70,229,0.6)]'
+                                                            : 'border-slate-200 bg-white hover:-translate-y-0.5 hover:border-primary/30 hover:bg-slate-50',
+                                                    )}
+                                                    aria-pressed={isSelected}
+                                                >
+                                                    <div
+                                                        className={cn(
+                                                            'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border text-base font-semibold transition-all',
+                                                            isSelected
+                                                                ? 'border-primary bg-primary text-primary-foreground'
+                                                                : 'border-slate-200 bg-slate-50 text-slate-600 group-hover:border-primary/20 group-hover:text-primary',
+                                                        )}
+                                                    >
+                                                        {isSelected ? <CircleDot className="h-5 w-5" /> : optionLabel}
+                                                    </div>
+
+                                                    <div className="min-w-0 flex-1 space-y-4">
+                                                        {option.option_image ? (
+                                                            <div className="overflow-hidden rounded-2xl border border-border/60 bg-slate-50 p-2">
+                                                                <img
+                                                                    src={option.option_image}
+                                                                    alt={t('student.exam_room.option_image', { label: optionLabel }, `Option ${optionLabel}`)}
+                                                                    className="max-h-56 w-full rounded-xl object-contain"
+                                                                    draggable="false"
+                                                                />
+                                                            </div>
+                                                        ) : null}
+
+                                                        <div
+                                                            className={cn(
+                                                                'prose prose-slate max-w-none text-base leading-7 prose-p:my-0 sm:text-lg',
+                                                                isSelected ? 'font-semibold text-slate-950' : 'text-slate-700',
+                                                            )}
+                                                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(option.option_text) }}
+                                                        />
+                                                    </div>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </ScrollArea>
+
+                            <div className="border-t border-border/60 bg-slate-50/70 px-5 py-4 sm:px-8">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-2xl"
+                                        onClick={() => setCurrentQuestionIndex((previous) => Math.max(0, previous - 1))}
+                                        disabled={currentQuestionIndex === 0 || isSubmitting}
                                     >
-                                        {idx + 1}
-                                    </button>
-                                );
-                            })}
-                        </div>
+                                        <ChevronLeft className="h-4 w-4" />
+                                        {t('student.exam_room.previous', {}, 'Previous')}
+                                    </Button>
 
-                        {/* Status Legend */}
-                        <div className="mt-6 pt-5 border-t border-slate-100 font-semibold space-y-3.5 text-sm text-slate-600">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <div className="w-5 h-5 rounded-md bg-emerald-50 border-2 border-emerald-300 shadow-sm"></div> Answered
+                                    <div className="flex flex-col gap-3 sm:flex-row">
+                                        {currentQuestionIndex < questions.length - 1 ? (
+                                            <Button
+                                                type="button"
+                                                className="rounded-2xl"
+                                                onClick={() => setCurrentQuestionIndex((previous) => Math.min(questions.length - 1, previous + 1))}
+                                                disabled={isSubmitting}
+                                            >
+                                                {t('student.exam_room.next', {}, 'Next Question')}
+                                                <ChevronRight className="h-4 w-4" />
+                                            </Button>
+                                        ) : null}
+
+                                        <Button
+                                            type="button"
+                                            variant={currentQuestionIndex < questions.length - 1 ? 'outline' : 'default'}
+                                            className="rounded-2xl"
+                                            onClick={openSubmitDialog}
+                                            disabled={isSubmitting}
+                                        >
+                                            {isSubmitting ? (
+                                                <LoaderCircle className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <CheckCircle2 className="h-4 w-4" />
+                                            )}
+                                            {t('student.exam_room.submit_exam', {}, 'Submit Exam')}
+                                        </Button>
+                                    </div>
                                 </div>
-                                <span className="font-bold">{Object.keys(answers).length}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 text-slate-700">
-                                    <div className="w-5 h-5 rounded-md bg-red-50 border-2 border-red-200 shadow-sm"></div> Skipped
-                                </div>
-                                {/* Calculate visually skipped logic */}
-                                <span className="font-bold">
-                                    {skippedCount}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between opacity-60">
-                                <div className="flex items-center gap-3 text-slate-600">
-                                    <div className="w-5 h-5 rounded-md bg-white border-2 border-slate-200"></div> Unviewed
-                                </div>
-                                <span className="font-bold">{questions.length - viewedQuestions.size}</span>
                             </div>
                         </div>
-                    </div>
+                    </section>
+
+                    <aside className="hidden overflow-hidden rounded-[32px] border border-white/60 bg-white/80 p-5 shadow-[0_24px_80px_-32px_rgba(15,23,42,0.35)] backdrop-blur-xl xl:block">
+                        <ScrollArea className="h-full pr-2">{navigatorContent}</ScrollArea>
+                    </aside>
                 </div>
-
             </div>
         </div>
     );
 }
-
