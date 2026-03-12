@@ -38,6 +38,22 @@ export interface Subject {
     created_at?: string | null;
 }
 
+export interface RolePermission {
+    key: string;
+    label: string;
+}
+
+export interface RolePermissionGroup {
+    group: string;
+    permissions: RolePermission[];
+}
+
+export interface RoleListItem {
+    id: string;
+    name: string;
+    users_count?: number;
+}
+
 export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
 
 export type QuestionType = 'mcq' | 'true_false' | 'fill_blank';
@@ -119,11 +135,22 @@ export interface StudentListItem {
         id?: string;
         name?: string;
         email?: string;
+        avatar?: string | null;
+        is_active?: boolean;
     } | null;
     batch?: {
         id: string;
         name: string;
     } | null;
+    batches?: Array<{
+        id: string;
+        name: string;
+    }>;
+    guardian_name?: string | null;
+    guardian_phone?: string | null;
+    admission_date?: string | null;
+    total_exams_taken?: number;
+    average_score?: number;
 }
 
 export interface ExamBuilderQuestion {

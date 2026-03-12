@@ -4,6 +4,7 @@ import { PageProps } from '@/types';
 import {
     LayoutDashboard,
     Users,
+    ShieldCheck,
     BookOpen,
     Layers3,
     FolderTree,
@@ -39,6 +40,8 @@ interface Props {
 
 const SIDEBAR_NAV = [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { title: 'Users', href: '/admin/users', icon: Users },
+    { title: 'Roles', href: '/admin/roles', icon: ShieldCheck },
     { title: 'Batches', href: '/admin/batches', icon: Layers3 },
     { title: 'Subjects', href: '/admin/subjects', icon: BookOpen },
     { title: 'Chapters', href: '/admin/chapters', icon: FolderTree },

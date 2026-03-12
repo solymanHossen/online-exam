@@ -18,6 +18,27 @@ class StudentResource extends JsonResource
             'status' => $this->status,
             'user_id' => $this->user_id,
             'batch_id' => $this->batch_id,
+            'user' => $this->whenLoaded('user', function () {
+                return [
+                    'id' => $this->user?->id,
+                    'name' => $this->user?->name,
+                    'email' => $this->user?->email,
+                    'avatar' => $this->user?->avatar,
+                    'is_active' => $this->user?->is_active,
+                ];
+            }),
+            'batches' => $this->whenLoaded('batch', function () {
+                if (! $this->batch) {
+                    return [];
+                }
+
+                return [[
+                    'id' => $this->batch->id,
+                    'name' => $this->batch->name,
+                ]];
+            }),
+            'total_exams_taken' => (int) ($this->total_exams_taken ?? 0),
+            'average_score' => round((float) ($this->average_score ?? 0), 2),
             'created_at' => $this->created_at,
         ];
     }

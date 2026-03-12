@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreStudentRequest;
 use App\Http\Requests\Admin\UpdateStudentRequest;
+use App\Http\Resources\StudentResource;
 use App\Models\Student;
 use App\Services\StudentService;
 use App\Traits\ResponseTrait;
@@ -33,7 +34,7 @@ class StudentController extends Controller
         $students = $this->studentService->getPaginatedStudents(15);
 
         return Inertia::render('Admin/Students/Index', [
-            'students' => $students, // In production map to StudentResource
+            'students' => StudentResource::collection($students),
         ]);
     }
 

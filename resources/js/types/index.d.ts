@@ -9,6 +9,10 @@ export interface User {
     is_active?: boolean;
     last_login_at?: string;
     created_at?: string;
+    role?: {
+        id: string;
+        name: string;
+    } | null;
 }
 
 export interface FlashMessages {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\ExamController as AdminExamController;
 // General Controllers
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\QuestionController;
+use App\Http\Controllers\Admin\RoleManagementController;
 use App\Http\Controllers\Admin\StudentController as AdminStudentController;
 // Admin Controllers
 use App\Http\Controllers\Admin\SubjectController;
@@ -101,6 +102,7 @@ Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('ad
 
     // RESTful resource controllers for core application entities
     Route::resource('users', UserController::class);
+    Route::get('roles', [RoleManagementController::class, 'index'])->name('roles.index');
     Route::resource('batches', BatchController::class);
     Route::resource('subjects', SubjectController::class);
     Route::resource('chapters', ChapterController::class);
