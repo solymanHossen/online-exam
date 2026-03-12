@@ -5,6 +5,8 @@ import {
     LayoutDashboard,
     Users,
     BookOpen,
+    Layers3,
+    FolderTree,
     Settings,
     FileQuestion,
     GraduationCap,
@@ -17,6 +19,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/Components/ui/Button';
+import { FlashToaster } from '@/Components/shared/FlashToaster';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/Components/ui/Sheet';
 import { Avatar, AvatarFallback, AvatarImage } from '@/Components/ui/Avatar';
 import {
@@ -36,7 +39,9 @@ interface Props {
 
 const SIDEBAR_NAV = [
     { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { title: 'Academic', href: '/admin/subjects', icon: BookOpen }, // Reusing subjects as Academic per previous routing
+    { title: 'Batches', href: '/admin/batches', icon: Layers3 },
+    { title: 'Subjects', href: '/admin/subjects', icon: BookOpen },
+    { title: 'Chapters', href: '/admin/chapters', icon: FolderTree },
     { title: 'Question Bank', href: '/admin/questions', icon: FileQuestion },
     { title: 'Exams', href: '/admin/exams', icon: GraduationCap },
     { title: 'Students', href: '/admin/students', icon: Users },
@@ -96,6 +101,7 @@ export default function AdminLayout({ children, header }: Props) {
 
     return (
         <div className="min-h-screen bg-muted/30 text-foreground flex overflow-hidden">
+            <FlashToaster />
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex w-72 flex-col border-r bg-card shadow-sm z-10 transition-all duration-300">
                 <div className="h-16 flex items-center px-6 border-b border-border/50">

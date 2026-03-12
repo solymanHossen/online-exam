@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, router } from '@inertiajs/react';
-import { Plus, MoreHorizontal, FileEdit, Trash2, LibraryBig } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import { Head, Link, router } from '@inertiajs/react';
+import { BookOpenText, BookType, MoreHorizontal, PencilLine, Plus, Rows3, Trash2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-import { Button } from '@/Components/ui/Button';
-import { DataTable, Column } from '@/Components/ui/DataTable';
+import { AcademicDataTable, type AcademicTableColumn } from '@/Components/domain/academic/AcademicDataTable';
 import { Badge } from '@/Components/ui/Badge';
+import { Button } from '@/Components/ui/Button';
+import { Card, CardContent } from '@/Components/ui/Card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/Components/ui/Dialog';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -16,244 +21,270 @@ import {
     DropdownMenuTrigger,
 } from '@/Components/ui/DropdownMenu';
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/Components/ui/Dialog';
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-} from '@/Components/ui/Form';
-import { Input } from '@/Components/ui/Input';
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/Components/ui/Select';
+import { useNavigationProgress } from '@/hooks/useNavigationProgress';
+import { useTranslation } from '@/hooks/useTranslation';
+import AdminLayout from '@/Layouts/AdminLayout';
 import type { PaginatedData } from '@/types';
+import type { Subject } from '@/types/models';
 
-// Define TS types
-interface Chapter {
-    id: string;
-    name: string;
-    subject_id: string;
+interface SubjectsIndexPageProps {
+    subjects: PaginatedData<Subject>;
 }
 
-interface Subject {
-    id: string;
-    name: string;
-    code: string;
-    chapters: Chapter[];
-    created_at: string;
-}
+type ChapterFilter = 'all' | 'with' | 'without';
 
-interface Props {
-    subjects: {
-        data: Subject[];
-        current_page: number;
-        last_page: number;
-        per_page: number;
-        total: number;
-        links: PaginatedData<Subject>['meta']['links'];
-        next_page_url: string | null;
-        prev_page_url: string | null;
-    };
-}
+export default function SubjectsIndexPage({ subjects }: SubjectsIndexPageProps) {
+    const { t } = useTranslation();
+    const isNavigating = useNavigationProgress();
+    const [chapterFilter, setChapterFilter] = useState<ChapterFilter>('all');
+    const [subjectToDelete, setSubjectToDelete] = useState<Subject | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-// Validation Schema
-const subjectSchema = z.object({
-    name: z.string().min(2, { message: "Subject name must be at least 2 characters." }),
-    code: z.string().min(2, { message: "Subject code must be at least 2 characters." }),
-});
+    const metrics = useMemo(() => {
+        const rows = subjects.data ?? [];
+        const chaptersCount = rows.reduce((total, subject) => total + (subject.chapters?.length ?? 0), 0);
 
-type SubjectFormValues = z.infer<typeof subjectSchema>;
+        return {
+            total: rows.length,
+            chapters: chaptersCount,
+            average: rows.length > 0 ? (chaptersCount / rows.length).toFixed(1) : '0.0',
+        };
+    }, [subjects.data]);
 
-export default function SubjectsIndex({ subjects }: Props) {
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
-
-    const form = useForm<SubjectFormValues>({
-        resolver: zodResolver(subjectSchema),
-        defaultValues: {
-            name: '',
-            code: '',
-        },
-    });
-
-    const openDialog = (subject?: Subject) => {
-        if (subject) {
-            setEditingSubject(subject);
-            form.reset({ name: subject.name, code: subject.code });
-        } else {
-            setEditingSubject(null);
-            form.reset({ name: '', code: '' });
+    const handleDelete = () => {
+        if (!subjectToDelete) {
+            return;
         }
-        setIsDialogOpen(true);
+
+        setIsDeleting(true);
+        router.delete(route('admin.subjects.destroy', subjectToDelete.id), {
+            preserveScroll: true,
+            onFinish: () => {
+                setIsDeleting(false);
+                setSubjectToDelete(null);
+            },
+        });
     };
 
-    const handleCloseDialog = () => {
-        setIsDialogOpen(false);
-        form.reset();
-        setEditingSubject(null);
-    };
-
-    const onSubmit = (data: SubjectFormValues) => {
-        if (editingSubject) {
-            router.put(route('admin.subjects.update', editingSubject.id), data, {
-                onSuccess: () => handleCloseDialog(),
-            });
-        } else {
-            router.post(route('admin.subjects.store'), data, {
-                onSuccess: () => handleCloseDialog(),
-            });
-        }
-    };
-
-    const deleteSubject = (id: string) => {
-        if (confirm('Are you sure you want to delete this subject? All related chapters will be deleted.')) {
-            router.delete(route('admin.subjects.destroy', id));
-        }
-    };
-
-    const columns: Column<Subject>[] = [
+    const columns: AcademicTableColumn<Subject>[] = [
         {
-            header: "Subject Info",
-            accessorKey: "name",
-            cell: (row: Subject) => (
-                <div className="flex items-center gap-3">
-                    <div className="bg-primary/10 p-2 rounded-lg text-primary">
-                        <LibraryBig size={18} />
+            id: 'subject',
+            header: t('admin.subjects.table.subject', {}, 'Subject'),
+            sortable: true,
+            sortValue: (subject) => subject.name.toLowerCase(),
+            cell: (subject) => (
+                <div className="flex items-start gap-3">
+                    <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                        <BookOpenText className="h-5 w-5" />
                     </div>
-                    <div className="flex flex-col">
-                        <span className="font-semibold text-foreground tracking-tight">{row.name}</span>
-                        <span className="text-xs text-muted-foreground">Code: {row.code}</span>
+                    <div className="min-w-0 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-semibold text-foreground">{subject.name}</span>
+                            <Badge variant="secondary" className="rounded-full uppercase tracking-wide">
+                                {subject.code}
+                            </Badge>
+                        </div>
+                        <p className="text-sm leading-6 text-muted-foreground">
+                            {subject.description || t('admin.subjects.table.subject_description', {}, 'Use this subject to organize chapters and assessment coverage.')}
+                        </p>
                     </div>
                 </div>
-            )
+            ),
         },
         {
-            header: "Chapters",
-            cell: (row: Subject) => (
-                <Badge variant={row.chapters?.length > 0 ? "secondary" : "outline"} className="font-medium">
-                    {row.chapters?.length || 0} Chapters
+            id: 'chapters',
+            header: t('admin.subjects.table.chapters', {}, 'Chapters'),
+            sortable: true,
+            sortValue: (subject) => subject.chapters?.length ?? 0,
+            cell: (subject) => (
+                <Badge variant={(subject.chapters?.length ?? 0) > 0 ? 'secondary' : 'outline'} className="rounded-full px-3 py-1">
+                    {subject.chapters?.length ?? 0} {t('admin.subjects.table.chapter_count', {}, 'chapters')}
                 </Badge>
-            )
+            ),
         },
         {
-            header: "Created",
-            cell: (row: Subject) => (
-                <span className="text-sm text-muted-foreground">
-                    {new Date(row.created_at).toLocaleDateString()}
-                </span>
-            )
+            id: 'batches',
+            header: t('admin.subjects.table.batches', {}, 'Batches'),
+            sortable: true,
+            sortValue: (subject) => subject.batch_ids?.length ?? subject.batches?.length ?? 0,
+            cell: (subject) => {
+                const batchCount = subject.batch_ids?.length ?? subject.batches?.length ?? 0;
+
+                return (
+                    <div className="space-y-1 text-sm text-muted-foreground">
+                        <p className="font-medium text-foreground">{batchCount}</p>
+                        <p>{t('admin.subjects.table.batch_assignment', {}, 'assigned batches')}</p>
+                    </div>
+                );
+            },
         },
         {
-            header: "Actions",
-            className: "text-right",
-            cell: (row: Subject) => (
+            id: 'created_at',
+            header: t('admin.subjects.table.created', {}, 'Created'),
+            sortable: true,
+            sortValue: (subject) => subject.created_at ?? '',
+            cell: (subject) => (
+                <div className="text-sm text-muted-foreground">
+                    {subject.created_at ? new Date(subject.created_at).toLocaleDateString() : '—'}
+                </div>
+            ),
+        },
+        {
+            id: 'actions',
+            header: t('admin.subjects.table.actions', {}, 'Actions'),
+            className: 'w-[72px] text-right',
+            headerClassName: 'text-right',
+            cell: (subject) => (
                 <div className="flex justify-end">
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
+                            <Button variant="ghost" size="icon" className="rounded-full">
                                 <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">{t('common.actions', {}, 'Actions')}</span>
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => openDialog(row)} className="cursor-pointer">
-                                <FileEdit className="h-4 w-4 mr-2" /> Edit
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem asChild>
+                                <Link href={route('admin.subjects.edit', subject.id)} className="cursor-pointer">
+                                    <PencilLine className="mr-2 h-4 w-4" />
+                                    {t('common.edit', {}, 'Edit')}
+                                </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => deleteSubject(row.id)} className="text-destructive focus:text-destructive cursor-pointer">
-                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                            <DropdownMenuItem
+                                onClick={() => setSubjectToDelete(subject)}
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                            >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                {t('common.delete', {}, 'Delete')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </div>
-            )
-        }
+            ),
+        },
     ];
 
     return (
-        <AdminLayout header="Academic Subjects">
-            <Head title="Subjects & Chapters" />
+        <AdminLayout header={<span>{t('admin.subjects.index.breadcrumb', {}, 'Subjects')}</span>}>
+            <Head title={t('admin.subjects.index.title', {}, 'Subjects')} />
 
-            <div className="flex flex-col gap-6">
-                {/* Header Section */}
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-foreground">Subjects Map</h1>
-                        <p className="text-sm text-muted-foreground">Manage your educational subjects and their relational chapters.</p>
+            <div className="space-y-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+                            {t('admin.subjects.index.heading', {}, 'Subject and curriculum map')}
+                        </h1>
+                        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                            {t('admin.subjects.index.description', {}, 'Design premium subject structures, connect them with batches, and keep chapter coverage easy to navigate.')}
+                        </p>
                     </div>
-                    <Button onClick={() => openDialog()} className="shadow-sm">
-                        <Plus className="mr-2 h-4 w-4" /> Add Subject
+                    <Button asChild className="rounded-xl shadow-sm">
+                        <Link href={route('admin.subjects.create')}>
+                            <Plus className="h-4 w-4" />
+                            {t('admin.subjects.index.create', {}, 'Create subject')}
+                        </Link>
                     </Button>
                 </div>
 
-                {/* Data Table */}
-                <DataTable
+                <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="rounded-3xl border-border/60 shadow-sm">
+                        <CardContent className="flex items-center gap-4 p-6">
+                            <div className="rounded-2xl bg-primary/10 p-3 text-primary">
+                                <BookType className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">{t('admin.subjects.metrics.total', {}, 'Visible subjects')}</p>
+                                <p className="text-2xl font-semibold text-foreground">{metrics.total}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-3xl border-border/60 shadow-sm">
+                        <CardContent className="flex items-center gap-4 p-6">
+                            <div className="rounded-2xl bg-emerald-500/10 p-3 text-emerald-600">
+                                <Rows3 className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">{t('admin.subjects.metrics.chapters', {}, 'Linked chapters')}</p>
+                                <p className="text-2xl font-semibold text-foreground">{metrics.chapters}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="rounded-3xl border-border/60 shadow-sm">
+                        <CardContent className="flex items-center gap-4 p-6">
+                            <div className="rounded-2xl bg-amber-500/10 p-3 text-amber-600">
+                                <BookOpenText className="h-5 w-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-muted-foreground">{t('admin.subjects.metrics.average', {}, 'Average chapters')}</p>
+                                <p className="text-2xl font-semibold text-foreground">{metrics.average}</p>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                <AcademicDataTable
                     data={subjects}
                     columns={columns}
-                    searchable
-                    searchKey="name"
-                    searchPlaceholder="Search subjects by name..."
+                    title={t('admin.subjects.table.title', {}, 'Subject registry')}
+                    description={t('admin.subjects.table.description', {}, 'Curated view of subjects, chapter counts, and batch relationships.')}
+                    searchPlaceholder={t('admin.subjects.table.search', {}, 'Search by subject name or code')}
+                    loading={(isNavigating && !subjectToDelete) || isDeleting}
+                    emptyTitle={t('admin.subjects.table.empty_title', {}, 'No subjects available')}
+                    emptyDescription={t('admin.subjects.table.empty_description', {}, 'Create your first subject to begin structuring the academic catalog.')}
+                    filterSlot={
+                        <Select value={chapterFilter} onValueChange={(value: ChapterFilter) => setChapterFilter(value)}>
+                            <SelectTrigger className="w-full rounded-xl sm:w-[200px]">
+                                <SelectValue placeholder={t('admin.subjects.filters.chapters', {}, 'Filter chapters')} />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">{t('admin.subjects.filters.all', {}, 'All subjects')}</SelectItem>
+                                <SelectItem value="with">{t('admin.subjects.filters.with', {}, 'With chapters')}</SelectItem>
+                                <SelectItem value="without">{t('admin.subjects.filters.without', {}, 'Without chapters')}</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    }
+                    searchPredicate={(subject, search) => {
+                        const chapterCount = subject.chapters?.length ?? 0;
+                        const matchesFilter = chapterFilter === 'all'
+                            || (chapterFilter === 'with' && chapterCount > 0)
+                            || (chapterFilter === 'without' && chapterCount === 0);
+
+                        if (!matchesFilter) {
+                            return false;
+                        }
+
+                        return `${subject.name} ${subject.code}`.toLowerCase().includes(search);
+                    }}
                 />
-
-                {/* Create / Edit Dialog */}
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogContent className="sm:max-w-[425px]">
-                        <DialogHeader>
-                            <DialogTitle>{editingSubject ? 'Edit Subject' : 'Add New Subject'}</DialogTitle>
-                            <DialogDescription>
-                                {editingSubject ? 'Update the details for this subject.' : 'Create a new subject for the academic structure.'}
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <div className="py-2">
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="name"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Subject Name</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="e.g. Advanced Mathematics" {...field} />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="code"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Subject Code</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="e.g. MTH-401" {...field} className="uppercase" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <div className="pt-4 flex justify-end gap-2">
-                                        <Button type="button" variant="outline" onClick={handleCloseDialog}>
-                                            Cancel
-                                        </Button>
-                                        <Button type="submit" disabled={form.formState.isSubmitting}>
-                                            {form.formState.isSubmitting ? 'Saving...' : 'Save Subject'}
-                                        </Button>
-                                    </div>
-                                </form>
-                            </Form>
-                        </div>
-                    </DialogContent>
-                </Dialog>
             </div>
+
+            <Dialog open={Boolean(subjectToDelete)} onOpenChange={(open) => !open && setSubjectToDelete(null)}>
+                <DialogContent className="rounded-3xl sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>{t('admin.subjects.delete.title', {}, 'Delete subject')}</DialogTitle>
+                        <DialogDescription>
+                            {t('admin.subjects.delete.description', {}, 'Removing a subject will also impact the way chapters are organized. Continue carefully.')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="rounded-2xl border border-border/60 bg-muted/20 p-4 text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">{subjectToDelete?.name}</span>
+                    </div>
+                    <DialogFooter className="gap-2 sm:justify-end">
+                        <Button variant="outline" className="rounded-xl" onClick={() => setSubjectToDelete(null)}>
+                            {t('common.cancel', {}, 'Cancel')}
+                        </Button>
+                        <Button variant="destructive" className="rounded-xl" onClick={handleDelete} disabled={isDeleting}>
+                            {t('common.delete', {}, 'Delete')}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </AdminLayout>
     );
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreSubjectRequest;
 use App\Http\Requests\Admin\UpdateSubjectRequest;
 use App\Http\Resources\SubjectResource;
+use App\Models\Batch;
 use App\Models\Subject;
 use App\Services\SubjectService;
 use App\Traits\ResponseTrait;
@@ -29,6 +30,43 @@ class SubjectController extends Controller
 
         return Inertia::render('Admin/Subjects/Index', [
             'subjects' => SubjectResource::collection($subjects),
+        ]);
+    }
+
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Subjects/Create', [
+            'availableBatches' => Batch::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'class_level', 'year'])
+                ->map(fn (Batch $batch) => [
+                    'id' => $batch->id,
+                    'name' => $batch->name,
+                    'description' => trim(implode(' • ', array_filter([
+                        $batch->class_level,
+                        $batch->year,
+                    ]))),
+                ])
+                ->values(),
+        ]);
+    }
+
+    public function edit(Subject $subject): Response
+    {
+        return Inertia::render('Admin/Subjects/Edit', [
+            'subject' => new SubjectResource($subject->loadMissing('chapters')),
+            'availableBatches' => Batch::query()
+                ->orderBy('name')
+                ->get(['id', 'name', 'class_level', 'year'])
+                ->map(fn (Batch $batch) => [
+                    'id' => $batch->id,
+                    'name' => $batch->name,
+                    'description' => trim(implode(' • ', array_filter([
+                        $batch->class_level,
+                        $batch->year,
+                    ]))),
+                ])
+                ->values(),
         ]);
     }
 

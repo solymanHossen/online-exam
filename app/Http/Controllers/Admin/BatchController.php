@@ -32,6 +32,18 @@ class BatchController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('Admin/Batches/Create');
+    }
+
+    public function edit(Batch $batch): Response
+    {
+        return Inertia::render('Admin/Batches/Edit', [
+            'batch' => new BatchResource($batch),
+        ]);
+    }
+
     public function store(StoreBatchRequest $request)
     {
         $this->batchService->createBatch($request->validated());

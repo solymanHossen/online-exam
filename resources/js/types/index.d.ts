@@ -11,6 +11,11 @@ export interface User {
     created_at?: string;
 }
 
+export interface FlashMessages {
+    success?: string;
+    error?: string;
+}
+
 export interface PaginatedData<T> {
     data: T[];
     links: {
@@ -42,6 +47,7 @@ export type PageProps<
         user: User;
     };
     appEnv?: string;
+    flash?: FlashMessages;
     locale: string;
     translations: Record<string, string>;
 };
