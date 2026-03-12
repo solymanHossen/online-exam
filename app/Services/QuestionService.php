@@ -39,10 +39,22 @@ class QuestionService extends BaseService
         }
     }
 
-    public function updateQuestion(Question $question, array $data): bool
+    public function updateQuestion(Question $question, array $data, array $options = []): bool
     {
         try {
-            return $this->repository->update($question, $data);
+            return DB::transaction(function () use ($question, $data, $options) {
+                $updated = $this->repository->update($question, $data);
+
+                if ($updated) {
+                    $question->options()->delete();
+
+                    if (!empty($options)) {
+                        $question->options()->createMany($options);
+                    }
+                }
+
+                return $updated;
+            });
         } catch (\Exception $e) {
             throw new \Exception('Failed to update question: ' . $e->getMessage());
         }

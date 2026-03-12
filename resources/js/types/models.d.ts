@@ -38,6 +38,45 @@ export interface Subject {
     created_at?: string | null;
 }
 
+export type QuestionDifficulty = 'easy' | 'medium' | 'hard';
+
+export type QuestionType = 'mcq' | 'true_false' | 'fill_blank';
+
+export interface QuestionOption {
+    id?: string;
+    option_text: string;
+    option_image?: string | null;
+    option_image_path?: string | null;
+    is_correct?: boolean;
+}
+
+export interface MaterialAttachment {
+    id?: string;
+    title: string;
+    file_url: string;
+    mime_type?: string | null;
+}
+
+export interface Question {
+    id: string;
+    subject_id: string;
+    chapter_id: string;
+    question_text: string;
+    explanation?: string | null;
+    difficulty: QuestionDifficulty;
+    question_type?: QuestionType;
+    marks: number | string;
+    negative_marks: number | string;
+    question_image?: string | null;
+    question_image_path?: string | null;
+    is_active?: boolean;
+    subject?: Pick<Subject, 'id' | 'name' | 'code'> | null;
+    chapter?: Pick<Chapter, 'id' | 'name'> | null;
+    options?: QuestionOption[];
+    materials?: MaterialAttachment[];
+    created_at?: string | null;
+}
+
 export interface ExamQuestion {
     id: string;
     question_text: string;

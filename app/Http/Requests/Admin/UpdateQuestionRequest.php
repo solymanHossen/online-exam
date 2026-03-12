@@ -16,17 +16,21 @@ class UpdateQuestionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->has('question_text')) {
-            $this->merge([
-                'question_text' => clean($this->input('question_text')),
-            ]);
+        $options = $this->input('options', []);
+
+        if (is_array($options)) {
+            foreach ($options as $key => $option) {
+                if (isset($option['option_text'])) {
+                    $options[$key]['option_text'] = clean($option['option_text']);
+                }
+            }
         }
 
-        if ($this->has('explanation')) {
-            $this->merge([
-                'explanation' => clean($this->input('explanation')),
-            ]);
-        }
+        $this->merge([
+            'question_text' => $this->has('question_text') ? clean($this->input('question_text')) : null,
+            'explanation' => $this->has('explanation') ? clean($this->input('explanation')) : null,
+            'options' => $options,
+        ]);
     }
 
     /**
@@ -37,11 +41,21 @@ class UpdateQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'question_text' => 'sometimes|required|string',
-            'difficulty' => 'sometimes|required|string|in:easy,medium,hard',
-            'marks' => 'sometimes|required|numeric|min:0',
-            'negative_marks' => 'sometimes|required|numeric|min:0',
+            'subject_id' => 'required|uuid|exists:subjects,id',
+            'chapter_id' => 'required|uuid|exists:chapters,id',
+            'question_text' => 'required|string',
+            'question_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'existing_question_image' => 'nullable|string',
+            'explanation' => 'nullable|string',
+            'difficulty' => 'required|string|in:easy,medium,hard',
+            'marks' => 'required|numeric|min:0',
+            'negative_marks' => 'required|numeric|min:0',
             'is_active' => 'sometimes|boolean',
+            'options' => 'required|array|min:2',
+            'options.*.option_text' => 'required|string',
+            'options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'options.*.existing_option_image' => 'nullable|string',
+            'options.*.is_correct' => 'boolean',
         ];
     }
 }
