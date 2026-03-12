@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers\Student;
 
+use App\Enums\ExamStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Student\ProcessPaymentRequest;
+use App\Http\Resources\ExamResource;
 use App\Http\Resources\PaymentResource;
+use App\Models\Exam;
 use App\Models\Payment;
+use App\Models\Student;
 use App\Services\PaymentService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
@@ -29,13 +33,42 @@ class PaymentController extends Controller
 
     public function index(Request $request): Response
     {
-        // Get paginated payments scoped to the authenticated user
-        // Using $paymentService repository with user to fix N+1 if related models were needed, 
-        // but here we just ensure basic relations or optimized query
-        $payments = $request->user()->payments()->latest()->paginate(15);
+        $user = $request->user();
+        $student = Student::query()->where('user_id', $user->id)->first();
+
+        $payments = $user->payments()->latest()->paginate(15);
+
+        $activeExams = Exam::query()
+            ->with('batch:id,name')
+            ->where('status', ExamStatus::PUBLISHED->value)
+            ->where('price', '>', 0)
+            ->where(function ($query) {
+                $query->whereNull('start_time')->orWhere('start_time', '<=', now());
+            })
+            ->where(function ($query) {
+                $query->whereNull('end_time')->orWhere('end_time', '>=', now());
+            })
+            ->when($student?->batch_id, function ($query) use ($student) {
+                $query->where(function ($nestedQuery) use ($student) {
+                    $nestedQuery->whereNull('batch_id')->orWhere('batch_id', $student->batch_id);
+                });
+            })
+            ->latest('start_time')
+            ->get();
+
+        $purchasedExamIds = $user->payments()
+            ->where('status', 'completed')
+            ->where('type', 'exam_fee')
+            ->pluck('description')
+            ->map(fn (?string $description) => $this->extractExamIdFromDescription($description))
+            ->filter()
+            ->values()
+            ->all();
 
         return Inertia::render('Student/PaymentsHistory', [
             'payments' => PaymentResource::collection($payments),
+            'activeExams' => ExamResource::collection($activeExams),
+            'purchasedExamIds' => $purchasedExamIds,
         ]);
     }
 
@@ -291,5 +324,18 @@ class PaymentController extends Controller
         }
 
         return null;
+    }
+
+    private function extractExamIdFromDescription(?string $description): ?string
+    {
+        if (! $description) {
+            return null;
+        }
+
+        if (preg_match('/exam_id:([a-zA-Z0-9-]+)/', $description, $matches) !== 1) {
+            return null;
+        }
+
+        return $matches[1] ?? null;
     }
 }

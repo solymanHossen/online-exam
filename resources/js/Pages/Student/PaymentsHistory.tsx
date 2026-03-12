@@ -1,119 +1,148 @@
-import AdminLayout from '@/Layouts/AdminLayout';
-import { Head, usePage } from '@inertiajs/react';
-import { CreditCard, Download, CheckCircle, XCircle, Clock } from 'lucide-react';
-import { PageProps } from '@/types';
+import { Head } from '@inertiajs/react';
+import { CreditCard, ReceiptText, ShieldCheck, Wallet } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
-interface Payment {
-    id: string;
-    amount: string;
-    currency: string;
-    status: 'pending' | 'completed' | 'failed';
-    transaction_id: string | null;
-    type: string;
-    description: string;
-    created_at: string;
+import { CheckoutModal } from '@/Components/domain/payments/CheckoutModal';
+import { ExamPricingGrid } from '@/Components/domain/payments/ExamPricingGrid';
+import { PaymentHistoryTable } from '@/Components/domain/payments/PaymentHistoryTable';
+import { Badge } from '@/Components/ui/Badge';
+import { Card, CardContent } from '@/Components/ui/Card';
+import { useTranslation } from '@/hooks/useTranslation';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import type { PaginatedData } from '@/types';
+import type { PaymentRecord, StudentStorefrontExam } from '@/types/models';
+
+interface PaymentsHistoryProps {
+    payments: PaginatedData<PaymentRecord>;
+    activeExams: StudentStorefrontExam[];
+    purchasedExamIds: string[];
 }
 
-export default function PaymentsHistory() {
-    const user = usePage<PageProps>().props.auth.user;
+function formatCurrency(amount: number, currency: string) {
+    return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 2,
+    }).format(amount);
+}
 
-    // Mock payments
-    const payments: Payment[] = [
-        {
-            id: '1', amount: '49.99', currency: 'USD', status: 'completed',
-            transaction_id: 'tx_123456789', type: 'subscription', description: 'Pro Plan - 1 Month', created_at: '2026-02-23T10:00:00Z'
-        },
-        {
-            id: '2', amount: '15.00', currency: 'USD', status: 'pending',
-            transaction_id: null, type: 'exam_fee', description: 'Advanced Physics Exam Entry', created_at: '2026-02-22T14:30:00Z'
-        },
-        {
-            id: '3', amount: '25.00', currency: 'USD', status: 'failed',
-            transaction_id: 'tx_987654321', type: 'exam_fee', description: 'Mathematics Olympiad', created_at: '2026-02-20T09:15:00Z'
-        }
-    ];
+export default function PaymentsHistory({ payments, activeExams, purchasedExamIds }: PaymentsHistoryProps) {
+    const { t } = useTranslation();
+    const [selectedExam, setSelectedExam] = useState<StudentStorefrontExam | null>(null);
 
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case 'completed': return <CheckCircle className="text-green-500" size={18} />;
-            case 'failed': return <XCircle className="text-red-500" size={18} />;
-            default: return <Clock className="text-yellow-500" size={18} />;
-        }
+    const paymentRows = payments.data ?? [];
+
+    const summary = useMemo(() => {
+        const successful = paymentRows.filter((payment) => payment.status === 'completed');
+        const pending = paymentRows.filter((payment) => payment.status === 'pending');
+        const totalSpent = successful.reduce((sum, payment) => sum + Number(payment.amount), 0);
+
+        return {
+            totalSpent,
+            successfulCount: successful.length,
+            pendingCount: pending.length,
+            availableCount: activeExams.length,
+        };
+    }, [activeExams.length, paymentRows]);
+
+    const handleDownloadInvoice = (payment: PaymentRecord) => {
+        const amount = formatCurrency(Number(payment.amount), payment.currency || 'USD');
+        const invoice = [
+            t('student.payments.invoice_title', {}, 'Invoice'),
+            '========================================',
+            `${t('student.payments.invoice_transaction', {}, 'Transaction')}: ${payment.transaction_id ?? payment.id}`,
+            `${t('student.payments.invoice_description', {}, 'Description')}: ${payment.description || t('student.payments.no_description', {}, 'Exam purchase')}`,
+            `${t('student.payments.invoice_gateway', {}, 'Gateway')}: ${payment.gateway_name || '—'}`,
+            `${t('student.payments.invoice_status', {}, 'Status')}: ${payment.status}`,
+            `${t('student.payments.invoice_amount', {}, 'Amount')}: ${amount}`,
+            `${t('student.payments.invoice_date', {}, 'Date')}: ${payment.created_at ?? '—'}`,
+        ].join('\n');
+
+        const blob = new Blob([invoice], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `invoice-${payment.transaction_id ?? payment.id}.txt`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
     };
 
     return (
-        <AdminLayout header={<h2 className="font-semibold text-xl text-slate-800 leading-tight">Payment History</h2>}>
-            <Head title="Payment History" />
-
-            <div className="max-w-6xl mx-auto py-6">
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="bg-white rounded-lg shadow-sm p-6 border border-slate-200">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-indigo-100 text-indigo-600 rounded-full">
-                                <CreditCard size={24} />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total Spent</p>
-                                <p className="text-2xl font-bold text-slate-800">$49.99</p>
-                            </div>
-                        </div>
+        <AuthenticatedLayout
+            header={
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                    <div className="space-y-2">
+                        <Badge className="w-fit rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-primary shadow-none">
+                            <ShieldCheck className="mr-1 h-3.5 w-3.5" />
+                            {t('student.payments.badge', {}, 'Secure commerce workspace')}
+                        </Badge>
+                        <h2 className="text-3xl font-semibold tracking-tight text-foreground">
+                            {t('student.payments.title', {}, 'Payments & Checkout')}
+                        </h2>
+                        <p className="max-w-3xl text-sm leading-6 text-muted-foreground">
+                            {t('student.payments.subtitle', {}, 'Purchase premium exams with confidence, review every transaction, and keep downloadable invoice records from a polished student billing dashboard.')}
+                        </p>
                     </div>
                 </div>
+            }
+        >
+            <Head title={t('student.payments.head_title', {}, 'Payments & Checkout')} />
 
-                {/* Table */}
-                <div className="bg-white shadow-sm ring-1 ring-black ring-opacity-5 rounded-lg overflow-hidden">
-                    <div className="px-6 py-4 border-b border-slate-200">
-                        <h3 className="text-lg font-medium text-slate-800">Recent Transactions</h3>
-                    </div>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-slate-200">
-                            <thead className="bg-slate-50">
-                                <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Transaction</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Amount</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wider">Invoice</th>
-                                </tr>
-                            </thead>
-                            <tbody className="bg-white divide-y divide-slate-200">
-                                {payments.map((payment) => (
-                                    <tr key={payment.id} className="hover:bg-slate-50 transition">
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-slate-900">{payment.description}</div>
-                                            <div className="text-xs text-slate-500">{payment.transaction_id || 'N/A'}</div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-semibold text-slate-800">
-                                                {payment.amount} {payment.currency}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="flex items-center gap-1.5">
-                                                {getStatusIcon(payment.status)}
-                                                <span className="text-sm text-slate-700 capitalize">{payment.status}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                                            {new Date(payment.created_at).toLocaleDateString()}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            {payment.status === 'completed' && (
-                                                <button className="text-indigo-600 hover:text-indigo-900 transition flex items-center justify-end gap-1 w-full">
-                                                    <Download size={16} /> Receipt
-                                                </button>
-                                            )}
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                {[
+                    {
+                        icon: Wallet,
+                        label: t('student.payments.total_spent', {}, 'Total spent'),
+                        value: formatCurrency(summary.totalSpent, 'USD'),
+                        tone: 'from-violet-500/15 via-indigo-500/10 to-transparent',
+                    },
+                    {
+                        icon: ReceiptText,
+                        label: t('student.payments.successful_payments', {}, 'Successful payments'),
+                        value: `${summary.successfulCount}`,
+                        tone: 'from-emerald-500/15 via-green-500/10 to-transparent',
+                    },
+                    {
+                        icon: CreditCard,
+                        label: t('student.payments.pending_payments', {}, 'Pending payments'),
+                        value: `${summary.pendingCount}`,
+                        tone: 'from-amber-500/15 via-orange-500/10 to-transparent',
+                    },
+                    {
+                        icon: ShieldCheck,
+                        label: t('student.payments.available_exams', {}, 'Paid exams available'),
+                        value: `${summary.availableCount}`,
+                        tone: 'from-sky-500/15 via-cyan-500/10 to-transparent',
+                    },
+                ].map((card) => {
+                    const Icon = card.icon;
 
-            </div>
-        </AdminLayout>
+                    return (
+                        <Card key={card.label} className="overflow-hidden rounded-[28px] border-border/60 bg-white/90 shadow-sm">
+                            <CardContent className="relative p-6">
+                                <div className={`absolute inset-0 bg-gradient-to-br ${card.tone}`} />
+                                <div className="relative flex items-start justify-between gap-4">
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">{card.label}</p>
+                                        <p className="mt-3 text-3xl font-semibold tracking-tight text-foreground">{card.value}</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-white/80 p-3 shadow-sm">
+                                        <Icon className="h-5 w-5 text-foreground" />
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    );
+                })}
+            </section>
+
+            <ExamPricingGrid exams={activeExams} purchasedExamIds={purchasedExamIds} onBuy={setSelectedExam} />
+
+            <PaymentHistoryTable payments={paymentRows} onDownloadInvoice={handleDownloadInvoice} />
+
+            <CheckoutModal exam={selectedExam} open={selectedExam !== null} onOpenChange={(open) => !open && setSelectedExam(null)} />
+        </AuthenticatedLayout>
     );
 }

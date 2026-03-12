@@ -50,6 +50,24 @@ export default function Authenticated({
                                 >
                                     Dashboard
                                 </NavLink>
+                                <NavLink
+                                    href={route('student.exams.index')}
+                                    active={route().current('student.exams.*')}
+                                >
+                                    Exams
+                                </NavLink>
+                                <NavLink
+                                    href={route('student.analytics')}
+                                    active={route().current('student.analytics')}
+                                >
+                                    Analytics
+                                </NavLink>
+                                <NavLink
+                                    href={route('student.payments.index')}
+                                    active={route().current('student.payments.*')}
+                                >
+                                    Payments
+                                </NavLink>
                             </div>
                         </div>
 
@@ -110,6 +128,24 @@ export default function Authenticated({
                                             active={route().current('dashboard')}
                                         >
                                             Dashboard
+                                        </ResponsiveNavLink>
+                                        <ResponsiveNavLink
+                                            href={route('student.exams.index')}
+                                            active={route().current('student.exams.*')}
+                                        >
+                                            Exams
+                                        </ResponsiveNavLink>
+                                        <ResponsiveNavLink
+                                            href={route('student.analytics')}
+                                            active={route().current('student.analytics')}
+                                        >
+                                            Analytics
+                                        </ResponsiveNavLink>
+                                        <ResponsiveNavLink
+                                            href={route('student.payments.index')}
+                                            active={route().current('student.payments.*')}
+                                        >
+                                            Payments
                                         </ResponsiveNavLink>
                                     </div>
 

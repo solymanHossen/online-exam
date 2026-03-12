@@ -167,6 +167,38 @@ export interface PersonalAnalyticsSummary {
     batch_rank: number | null;
 }
 
+export type PaymentStatus = 'pending' | 'completed' | 'failed';
+
+export interface PaymentRecord {
+    id: string;
+    user_id: string;
+    amount: number | string;
+    currency: string;
+    status: PaymentStatus;
+    transaction_id?: string | null;
+    gateway_name?: string | null;
+    type: string;
+    description?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+}
+
+export interface StudentStorefrontExam {
+    id: string;
+    title: string;
+    description?: string | null;
+    price?: number | string | null;
+    total_marks: number;
+    duration_minutes: number;
+    pass_marks: number;
+    start_time?: string | null;
+    end_time?: string | null;
+    batch?: {
+        id: string;
+        name: string;
+    } | null;
+}
+
 export type ExamStatus = 'draft' | 'published' | 'completed' | 'cancelled';
 
 export interface StudentListItem {
