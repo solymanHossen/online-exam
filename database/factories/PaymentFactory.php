@@ -21,17 +21,18 @@ class PaymentFactory extends Factory
             'user_id' => User::factory(),
             'amount' => $this->faker->randomFloat(2, 10, 500),
             'currency' => 'USD',
-            'status' => $this->faker->randomElement(['success', 'pending', 'failed']),
+            'status' => $this->faker->randomElement(['completed', 'pending', 'failed']),
             'transaction_id' => 'TXN'.strtoupper($this->faker->unique()->bothify('?????#####')),
             'type' => $this->faker->randomElement(['exam_fee', 'subscription']),
             'description' => $this->faker->sentence(),
+            'gateway_name' => $this->faker->randomElement(['stripe', 'paypal']),
         ];
     }
 
     public function paid(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'success',
+            'status' => 'completed',
         ]);
     }
 

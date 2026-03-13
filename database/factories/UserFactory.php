@@ -40,23 +40,35 @@ class UserFactory extends Factory
 
     public function admin(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'Admin')->first() ?? Role::factory()->admin(),
-        ]);
+        return $this->state(function (array $attributes) {
+            $role = Role::query()->firstOrCreate(['name' => 'admin']);
+
+            return [
+                'role_id' => $role->id,
+            ];
+        });
     }
 
     public function teacher(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'Teacher')->first() ?? Role::factory()->teacher(),
-        ]);
+        return $this->state(function (array $attributes) {
+            $role = Role::query()->firstOrCreate(['name' => 'teacher']);
+
+            return [
+                'role_id' => $role->id,
+            ];
+        });
     }
 
     public function student(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'role_id' => Role::where('name', 'Student')->first() ?? Role::factory()->student(),
-        ]);
+        return $this->state(function (array $attributes) {
+            $role = Role::query()->firstOrCreate(['name' => 'student']);
+
+            return [
+                'role_id' => $role->id,
+            ];
+        });
     }
 
     /**

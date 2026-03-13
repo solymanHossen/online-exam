@@ -2,173 +2,579 @@
 
 namespace Database\Seeders;
 
+use App\Enums\ExamStatus;
+use App\Enums\StudentStatus;
+use App\Models\ActivityLog;
 use App\Models\Batch;
 use App\Models\Chapter;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
 use App\Models\ExamQuestion;
+use App\Models\ExamRanking;
+use App\Models\Material;
+use App\Models\Notification;
 use App\Models\Payment;
 use App\Models\Question;
 use App\Models\QuestionOption;
+use App\Models\QuestionStatistic;
 use App\Models\Role;
 use App\Models\Student;
 use App\Models\StudentAnswer;
 use App\Models\Subject;
+use App\Models\SubjectPerformance;
+use App\Models\SystemSetting;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
+    private const DEFAULT_PASSWORD = 'password';
+
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // 1. Roles
-        $adminRole = Role::firstOrCreate(['name' => 'admin']);
-        $teacherRole = Role::firstOrCreate(['name' => 'teacher']);
-        $studentRole = Role::firstOrCreate(['name' => 'student']);
+        $this->seedSystemSettings();
 
-        // 2. Admin User
-        $adminUser = User::updateOrCreate(
-            ['email' => 'admin@example.com'],
-            [
-                'role_id' => $adminRole->id,
-                'name' => 'System Admin',
-                'password' => Hash::make('password'),
-                'email_verified_at' => now(),
-            ]
-        );
+        $adminRole = Role::query()->create(['name' => 'admin']);
+        $teacherRole = Role::query()->create(['name' => 'teacher']);
+        $studentRole = Role::query()->create(['name' => 'student']);
 
-        // 3. Batches & Subjects
-        $batch = Batch::firstOrCreate([
-            'name' => '2026 CodeCanyon Demo Batch',
-            'class_level' => 'Grade 12',
-            'year' => 2026,
+        $adminUser = $this->createVerifiedUser($adminRole, 'System Admin', 'admin@example.com', [
+            'phone' => '+8801700000000',
         ]);
-        $subject = Subject::factory()->create(['name' => 'General Knowledge']);
-        $chapter = Chapter::factory()->create(['subject_id' => $subject->id, 'name' => 'Demo Chapter']);
 
-        // 4. Generate EXACTLY 50 Questions with Options
-        $questions = collect();
-        for ($i = 0; $i < 50; $i++) {
-            $question = Question::factory()->create([
+        $teachers = collect([
+            ['name' => 'Ariana Carter', 'email' => 'teacher1@example.com'],
+            ['name' => 'Nolan Brooks', 'email' => 'teacher2@example.com'],
+            ['name' => 'Sofia Bennett', 'email' => 'teacher3@example.com'],
+        ])->map(fn (array $teacher, int $index) => $this->createVerifiedUser(
+            $teacherRole,
+            $teacher['name'],
+            $teacher['email'],
+            [
+                'phone' => '+88017123' . str_pad((string) ($index + 101), 3, '0', STR_PAD_LEFT),
+                'last_login_at' => now()->subDays($index + 1),
+            ],
+        ));
+
+        $batches = collect([
+            ['name' => 'Batch Alpha 2026', 'class_level' => 'Grade 10', 'year' => 2026],
+            ['name' => 'Batch Beta 2026', 'class_level' => 'Grade 11', 'year' => 2026],
+            ['name' => 'Batch Gamma 2026', 'class_level' => 'Grade 12', 'year' => 2026],
+        ])->map(fn (array $batch) => Batch::query()->create($batch));
+
+        $subjects = collect([
+            ['name' => 'Mathematics', 'code' => 'MTH101'],
+            ['name' => 'Physics', 'code' => 'PHY101'],
+            ['name' => 'Chemistry', 'code' => 'CHM101'],
+            ['name' => 'Biology', 'code' => 'BIO101'],
+            ['name' => 'English', 'code' => 'ENG101'],
+            ['name' => 'Computer Science', 'code' => 'CSE101'],
+        ])->map(function (array $subjectData, int $subjectIndex) use ($teachers) {
+            $subject = Subject::query()->create($subjectData);
+
+            collect([
+                'Fundamentals',
+                'Core Concepts',
+                'Advanced Practice',
+            ])->each(function (string $chapterName, int $chapterIndex) use ($subject) {
+                Chapter::query()->create([
+                    'subject_id' => $subject->id,
+                    'name' => $chapterName,
+                    'order' => $chapterIndex + 1,
+                    'description' => $subject->name . ' ' . strtolower($chapterName) . ' chapter.',
+                ]);
+            });
+
+            Material::query()->create([
+                'title' => $subject->name . ' Quick Revision PDF',
                 'subject_id' => $subject->id,
-                'chapter_id' => $chapter->id,
-                'created_by' => $adminUser->id,
-                'question_text' => "Sample Demo Question #" . ($i + 1) . " for CodeCanyon Testing.",
-                'marks' => 2,
-                'negative_marks' => 0.5,
+                'file_url' => 'https://example.com/materials/' . Str::slug($subject->name) . '-revision.pdf',
+                'created_by' => $teachers[$subjectIndex % $teachers->count()]->id,
             ]);
 
-            // Create 1 correct, 3 incorrect options
-            QuestionOption::factory()->correct()->create(['question_id' => $question->id, 'option_text' => 'Correct Option A']);
-            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option B']);
-            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option C']);
-            QuestionOption::factory()->incorrect()->create(['question_id' => $question->id, 'option_text' => 'Incorrect Option D']);
+            Material::query()->create([
+                'title' => $subject->name . ' Formula Sheet',
+                'subject_id' => $subject->id,
+                'file_url' => 'https://example.com/materials/' . Str::slug($subject->name) . '-formula-sheet.pdf',
+                'created_by' => $teachers[($subjectIndex + 1) % $teachers->count()]->id,
+            ]);
 
-            $questions->push($question);
+            return $subject;
+        });
+
+        $students = collect(range(1, 12))->map(function (int $index) use ($studentRole, $batches) {
+            $user = $this->createVerifiedUser(
+                $studentRole,
+                'Demo Student ' . $index,
+                'student' . $index . '@example.com',
+                [
+                    'phone' => '+88018123' . str_pad((string) $index, 4, '0', STR_PAD_LEFT),
+                    'last_login_at' => now()->subHours($index),
+                ],
+            );
+
+            $batch = $batches[($index - 1) % $batches->count()];
+
+            Student::query()->create([
+                'user_id' => $user->id,
+                'roll_number' => 'STD-' . str_pad((string) $index, 4, '0', STR_PAD_LEFT),
+                'guardian_name' => 'Guardian ' . $index,
+                'guardian_phone' => '+88019123' . str_pad((string) $index, 4, '0', STR_PAD_LEFT),
+                'batch_id' => $batch->id,
+                'admission_date' => now()->subMonths(rand(1, 12))->toDateString(),
+                'status' => StudentStatus::Active->value,
+            ]);
+
+            return $user;
+        });
+
+        $questions = collect();
+        foreach ($subjects as $subjectIndex => $subject) {
+            $chapters = Chapter::query()->where('subject_id', $subject->id)->orderBy('order')->get();
+
+            foreach ($chapters as $chapterIndex => $chapter) {
+                for ($i = 1; $i <= 6; $i++) {
+                    $questionNumber = ($subjectIndex * 18) + ($chapterIndex * 6) + $i;
+                    $question = Question::query()->create([
+                        'subject_id' => $subject->id,
+                        'chapter_id' => $chapter->id,
+                        'question_text' => sprintf('%s Question %d: choose the best answer.', $subject->name, $questionNumber),
+                        'question_image' => null,
+                        'explanation' => 'Detailed explanation for ' . $subject->name . ' question ' . $questionNumber . '.',
+                        'difficulty' => collect(['easy', 'medium', 'hard'])->random(),
+                        'marks' => collect([1, 2, 3, 4])->random(),
+                        'negative_marks' => 0.50,
+                        'created_by' => $teachers[$questionNumber % $teachers->count()]->id,
+                        'is_active' => true,
+                    ]);
+
+                    collect(['A', 'B', 'C', 'D'])->each(function (string $optionLabel, int $optionIndex) use ($question, $subject, $questionNumber) {
+                        QuestionOption::query()->create([
+                            'question_id' => $question->id,
+                            'option_text' => sprintf('%s option %s for question %d', $subject->name, $optionLabel, $questionNumber),
+                            'option_image' => null,
+                            'is_correct' => $optionIndex === 0,
+                        ]);
+                    });
+
+                    $questions->push($question);
+                }
+            }
         }
 
-        // 5. Generate EXACTLY 3 Exams (Past, Active, Upcoming)
         $exams = collect();
+        foreach ($batches as $batchIndex => $batch) {
+            $batchQuestions = $questions->filter(fn (Question $question) => (int) $question->subject_id !== 0)->values();
 
-        // Active Exam (Live Now)
-        $exams->push(Exam::factory()->published()->create([
-            'batch_id' => $batch->id,
-            'created_by' => $adminUser->id,
-            'title' => 'Live Demo Assessment',
-            'start_time' => now()->subMinutes(10),
-            'end_time' => now()->addDays(2),
-            'duration_minutes' => 60,
-        ]));
+            $examDefinitions = [
+                [
+                    'title' => $batch->name . ' Foundation Mock',
+                    'status' => ExamStatus::PUBLISHED,
+                    'start_time' => now()->subDays(14),
+                    'end_time' => now()->subDays(13),
+                    'duration_minutes' => 60,
+                    'price' => 0,
+                ],
+                [
+                    'title' => $batch->name . ' Performance Check',
+                    'status' => ExamStatus::PUBLISHED,
+                    'start_time' => now()->subDays(7),
+                    'end_time' => now()->subDays(6),
+                    'duration_minutes' => 75,
+                    'price' => 9.99,
+                ],
+                [
+                    'title' => $batch->name . ' Live Assessment',
+                    'status' => ExamStatus::PUBLISHED,
+                    'start_time' => now()->subHours(2),
+                    'end_time' => now()->addDays(2),
+                    'duration_minutes' => 90,
+                    'price' => 14.99,
+                ],
+                [
+                    'title' => $batch->name . ' Final Challenge',
+                    'status' => ExamStatus::PUBLISHED,
+                    'start_time' => now()->addDays(3),
+                    'end_time' => now()->addDays(4),
+                    'duration_minutes' => 120,
+                    'price' => 19.99,
+                ],
+            ];
 
-        // Upcoming Exam
-        $exams->push(Exam::factory()->published()->create([
-            'batch_id' => $batch->id,
-            'created_by' => $adminUser->id,
-            'title' => 'Upcoming Final Exam',
-            'start_time' => now()->addDays(1),
-            'end_time' => now()->addDays(5),
-            'duration_minutes' => 120,
-        ]));
+            foreach ($examDefinitions as $definitionIndex => $definition) {
+                $exam = Exam::query()->create([
+                    'title' => $definition['title'],
+                    'description' => 'Demo exam generated for ' . $batch->name . '.',
+                    'batch_id' => $batch->id,
+                    'price' => $definition['price'],
+                    'total_marks' => 100,
+                    'duration_minutes' => $definition['duration_minutes'],
+                    'pass_marks' => 40,
+                    'negative_enabled' => true,
+                    'shuffle_questions' => true,
+                    'shuffle_options' => true,
+                    'show_result_immediately' => true,
+                    'start_time' => $definition['start_time'],
+                    'end_time' => $definition['end_time'],
+                    'status' => $definition['status'],
+                    'created_by' => $teachers[($batchIndex + $definitionIndex) % $teachers->count()]->id,
+                ]);
 
-        // Past Exam
-        $exams->push(Exam::factory()->published()->create([
-            'batch_id' => $batch->id,
-            'created_by' => $adminUser->id,
-            'title' => 'Completed Mock Test',
-            'start_time' => now()->subDays(5),
-            'end_time' => now()->subDays(3),
+                $subjectIdsForBatch = $subjects->shuffle()->take(4)->pluck('id');
+                $examQuestionPool = $questions
+                    ->whereIn('subject_id', $subjectIdsForBatch)
+                    ->shuffle()
+                    ->take(20)
+                    ->values();
+
+                foreach ($examQuestionPool as $order => $question) {
+                    ExamQuestion::query()->create([
+                        'exam_id' => $exam->id,
+                        'question_id' => $question->id,
+                        'question_order' => $order + 1,
+                    ]);
+                }
+
+                $exams->push($exam);
+            }
+        }
+
+        $exams->push(Exam::query()->create([
+            'title' => 'Global Draft Exam',
+            'description' => 'Draft exam for admin preview.',
+            'batch_id' => null,
+            'price' => 0,
+            'total_marks' => 50,
             'duration_minutes' => 45,
+            'pass_marks' => 20,
+            'negative_enabled' => false,
+            'shuffle_questions' => false,
+            'shuffle_options' => true,
+            'show_result_immediately' => false,
+            'start_time' => now()->addDays(10),
+            'end_time' => now()->addDays(11),
+            'status' => ExamStatus::DRAFT,
+            'created_by' => $adminUser->id,
         ]));
 
-        // Attach random questions to exams
-        foreach ($exams as $exam) {
-            $examQuestions = $questions->random(15);
-            $order = 1;
-            foreach ($examQuestions as $eq) {
-                ExamQuestion::firstOrCreate([
-                    'exam_id' => $exam->id,
-                    'question_id' => $eq->id,
-                    'question_order' => $order++,
+        $questionStats = [];
+        $subjectPerformanceAccumulator = [];
+
+        foreach ($students as $index => $studentUser) {
+            $studentProfile = Student::query()->where('user_id', $studentUser->id)->firstOrFail();
+            $batchExams = $exams->where('batch_id', $studentProfile->batch_id)->values();
+            $completedExams = $batchExams->filter(function (Exam $exam) {
+                return $exam->status === ExamStatus::PUBLISHED
+                    && $exam->end_time !== null
+                    && $exam->end_time->isPast();
+            })->values();
+
+            foreach ($completedExams->take(2) as $completedExamIndex => $exam) {
+                $accuracy = 55 + (($index + 1) * 3) + ($completedExamIndex * 7);
+                $this->createCompletedAttempt(
+                    $exam,
+                    $studentUser,
+                    min($accuracy, 92),
+                    $questionStats,
+                    $subjectPerformanceAccumulator,
+                );
+            }
+
+            if ($index < 6) {
+                $activeExam = $batchExams->first(function (Exam $exam) {
+                    return $exam->status === ExamStatus::PUBLISHED
+                        && $exam->start_time !== null
+                        && $exam->start_time->isPast()
+                        && $exam->end_time !== null
+                        && $exam->end_time->isFuture();
+                });
+
+                if ($activeExam instanceof Exam) {
+                    $this->createInProgressAttempt($activeExam, $studentUser);
+                }
+            }
+
+            $paidExam = $batchExams->first(fn (Exam $exam) => (float) $exam->price > 0);
+            if ($paidExam instanceof Exam) {
+                Payment::query()->create([
+                    'user_id' => $studentUser->id,
+                    'amount' => $paidExam->price,
+                    'currency' => 'USD',
+                    'status' => 'completed',
+                    'transaction_id' => 'TXN-' . strtoupper(Str::random(10)),
+                    'gateway_name' => 'stripe',
+                    'type' => 'exam_fee',
+                    'description' => 'exam_id:' . $paidExam->id . ' - Successful exam payment',
+                ]);
+            }
+
+            Payment::query()->create([
+                'user_id' => $studentUser->id,
+                'amount' => 12.99,
+                'currency' => 'USD',
+                'status' => 'pending',
+                'transaction_id' => 'TXN-' . strtoupper(Str::random(10)),
+                'gateway_name' => 'paypal',
+                'type' => 'subscription',
+                'description' => 'Premium analytics subscription pending.',
+            ]);
+
+            Payment::query()->create([
+                'user_id' => $studentUser->id,
+                'amount' => 7.50,
+                'currency' => 'USD',
+                'status' => 'failed',
+                'transaction_id' => 'TXN-' . strtoupper(Str::random(10)),
+                'gateway_name' => 'stripe',
+                'type' => 'exam_fee',
+                'description' => 'Failed retry payment for optional mock exam.',
+            ]);
+        }
+
+        foreach ($questionStats as $questionId => $stats) {
+            QuestionStatistic::query()->create([
+                'question_id' => $questionId,
+                'times_attempted' => $stats['times_attempted'],
+                'times_correct' => $stats['times_correct'],
+            ]);
+        }
+
+        $questions
+            ->reject(fn (Question $question) => array_key_exists($question->id, $questionStats))
+            ->each(function (Question $question) {
+                QuestionStatistic::query()->create([
+                    'question_id' => $question->id,
+                    'times_attempted' => rand(4, 16),
+                    'times_correct' => rand(1, 12),
+                ]);
+            });
+
+        foreach ($subjectPerformanceAccumulator as $userId => $subjectsMap) {
+            foreach ($subjectsMap as $subjectId => $stats) {
+                SubjectPerformance::query()->create([
+                    'user_id' => $userId,
+                    'subject_id' => $subjectId,
+                    'proficiency_level' => round($stats['score_sum'] / max($stats['attempts'], 1), 2),
                 ]);
             }
         }
 
-        // 6. Generate EXACTLY 5 Students
-        $students = collect();
-        for ($i = 1; $i <= 5; $i++) {
-            $studentUser = User::updateOrCreate(
-                ['email' => "student{$i}@example.com"],
-                [
-                    'role_id' => $studentRole->id,
-                    'name' => "Demo Student {$i}",
-                    'password' => Hash::make('password'),
-                    'email_verified_at' => now(),
-                ]
-            );
+        foreach ($students as $studentUser) {
+            $existingSubjectIds = SubjectPerformance::query()
+                ->where('user_id', $studentUser->id)
+                ->pluck('subject_id');
 
-            Student::firstOrCreate(
-                ['user_id' => $studentUser->id],
-                [
-                    'batch_id' => $batch->id,
-                    'roll_number' => $studentUser->id,
-                    'admission_date' => now()->toDateString(),
-                ]
-            );
-
-            $students->push($studentUser);
+            $subjects
+                ->reject(fn (Subject $subject) => $existingSubjectIds->contains($subject->id))
+                ->take(2)
+                ->each(function (Subject $subject) use ($studentUser) {
+                    SubjectPerformance::query()->create([
+                        'user_id' => $studentUser->id,
+                        'subject_id' => $subject->id,
+                        'proficiency_level' => rand(45, 88),
+                    ]);
+                });
         }
 
-        // 7. Seed 1 Completed Attempt for the Past Exam for Student 1 to show results UI
-        $pastExam = $exams->last();
-        $demoStudent1 = $students->first();
+        $completedAttempts = ExamAttempt::query()
+            ->where('is_completed', true)
+            ->orderByDesc('total_score')
+            ->get()
+            ->groupBy('exam_id');
 
-        $attempt = ExamAttempt::create([
-            'id' => Str::uuid(),
-            'exam_id' => $pastExam->id,
-            'user_id' => $demoStudent1->id,
-            'start_time' => $pastExam->start_time->addMinutes(5),
-            'end_time' => $pastExam->start_time->addMinutes(45),
+        foreach ($completedAttempts as $examId => $attempts) {
+            $attempts->values()->each(function (ExamAttempt $attempt, int $rankIndex) use ($examId) {
+                ExamRanking::query()->create([
+                    'exam_id' => $examId,
+                    'user_id' => $attempt->user_id,
+                    'rank' => $rankIndex + 1,
+                    'total_score' => $attempt->total_score,
+                ]);
+            });
+        }
+
+        collect([$adminUser])
+            ->merge($teachers)
+            ->merge($students)
+            ->each(function (User $user, int $index) use ($exams) {
+                Notification::query()->create([
+                    'user_id' => $user->id,
+                    'title' => 'Welcome to Online Exam',
+                    'message' => 'Your demo account is ready with dashboard data and sample records.',
+                    'type' => 'system',
+                    'read_at' => $index % 2 === 0 ? now()->subDay() : null,
+                ]);
+
+                Notification::query()->create([
+                    'user_id' => $user->id,
+                    'title' => 'Exam Schedule Updated',
+                    'message' => 'A new assessment is now visible in your exam list.',
+                    'type' => 'exam',
+                    'read_at' => null,
+                ]);
+
+                ActivityLog::query()->create([
+                    'user_id' => $user->id,
+                    'action' => 'Logged into the system',
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'Seeder Demo Browser',
+                ]);
+
+                ActivityLog::query()->create([
+                    'user_id' => $user->id,
+                    'action' => 'Viewed ' . $exams->random()->title,
+                    'ip_address' => '127.0.0.1',
+                    'user_agent' => 'Seeder Demo Browser',
+                ]);
+            });
+
+        $this->command?->newLine();
+        $this->command?->info('Demo seed completed successfully.');
+        $this->command?->info('Admin login: admin@example.com / ' . self::DEFAULT_PASSWORD);
+        $this->command?->info('Teacher login: teacher1@example.com / ' . self::DEFAULT_PASSWORD);
+        $this->command?->info('Student login: student1@example.com / ' . self::DEFAULT_PASSWORD);
+    }
+
+    private function seedSystemSettings(): void
+    {
+        collect([
+            'site_name' => 'Online Exam Platform',
+            'site_email' => 'support@example.com',
+            'default_currency' => 'USD',
+            'timezone' => 'Asia/Dhaka',
+            'allow_registration' => '1',
+        ])->each(function (string $value, string $key) {
+            SystemSetting::query()->create([
+                'key' => $key,
+                'value' => $value,
+            ]);
+        });
+    }
+
+    private function createVerifiedUser(Role $role, string $name, string $email, array $overrides = []): User
+    {
+        $user = User::query()->create(array_merge([
+            'role_id' => $role->id,
+            'name' => $name,
+            'email' => $email,
+            'phone' => '+8801700000000',
+            'password' => self::DEFAULT_PASSWORD,
+            'avatar' => null,
+            'is_active' => true,
+            'last_login_at' => now(),
+        ], $overrides));
+
+        $user->forceFill([
+            'email_verified_at' => now(),
+            'remember_token' => Str::random(10),
+        ])->save();
+
+        return $user;
+    }
+
+    private function createCompletedAttempt(
+        Exam $exam,
+        User $student,
+        int $accuracy,
+        array &$questionStats,
+        array &$subjectPerformanceAccumulator,
+    ): void {
+        $attempt = ExamAttempt::query()->create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'start_time' => $exam->start_time?->copy()?->addMinutes(rand(1, 12)) ?? now()->subHours(2),
+            'end_time' => $exam->start_time?->copy()?->addMinutes($exam->duration_minutes ?? 60) ?? now()->subHour(),
             'is_completed' => true,
-            'total_score' => 20,
+            'total_score' => 0,
         ]);
 
-        $examQuestions = ExamQuestion::where('exam_id', $pastExam->id)->get();
-        foreach ($examQuestions as $eq) {
-            $options = QuestionOption::where('question_id', $eq->question_id)->get();
-            if ($options->isNotEmpty()) {
-                $selectedOption = $options->random();
-                StudentAnswer::create([
-                    'id' => Str::uuid(),
-                    'exam_attempt_id' => $attempt->id,
-                    'question_id' => $eq->question_id,
-                    'selected_option_id' => $selectedOption->id,
-                ]);
+        $score = 0.0;
+        $examQuestions = ExamQuestion::query()
+            ->with(['question.options'])
+            ->where('exam_id', $exam->id)
+            ->get();
+
+        foreach ($examQuestions as $examQuestion) {
+            $question = $examQuestion->question;
+            if (! $question instanceof Question) {
+                continue;
             }
+
+            $options = $question->options;
+            $correctOption = $options->firstWhere('is_correct', true);
+            $incorrectOptions = $options->where('is_correct', false)->values();
+
+            if (! $correctOption instanceof QuestionOption || $incorrectOptions->isEmpty()) {
+                continue;
+            }
+
+            $isCorrect = rand(1, 100) <= $accuracy;
+            $selectedOption = $isCorrect ? $correctOption : $incorrectOptions->random();
+            $marksAwarded = $isCorrect ? (float) $question->marks : -1 * (float) $question->negative_marks;
+            $score += $marksAwarded;
+
+            StudentAnswer::query()->create([
+                'exam_attempt_id' => $attempt->id,
+                'question_id' => $question->id,
+                'selected_option_id' => $selectedOption->id,
+                'is_correct' => $isCorrect,
+                'marks_awarded' => $marksAwarded,
+            ]);
+
+            $questionStats[$question->id] = [
+                'times_attempted' => ($questionStats[$question->id]['times_attempted'] ?? 0) + 1,
+                'times_correct' => ($questionStats[$question->id]['times_correct'] ?? 0) + ($isCorrect ? 1 : 0),
+            ];
+
+            $subjectPerformanceAccumulator[$student->id][$question->subject_id] = [
+                'score_sum' => ($subjectPerformanceAccumulator[$student->id][$question->subject_id]['score_sum'] ?? 0) + max($marksAwarded, 0),
+                'attempts' => ($subjectPerformanceAccumulator[$student->id][$question->subject_id]['attempts'] ?? 0) + 1,
+            ];
+        }
+
+        $attempt->update([
+            'total_score' => max(round($score, 2), 0),
+        ]);
+    }
+
+    private function createInProgressAttempt(Exam $exam, User $student): void
+    {
+        $attempt = ExamAttempt::query()->create([
+            'exam_id' => $exam->id,
+            'user_id' => $student->id,
+            'start_time' => now()->subMinutes(rand(5, 20)),
+            'end_time' => now()->addMinutes(60),
+            'is_completed' => false,
+            'total_score' => 0,
+        ]);
+
+        $examQuestions = ExamQuestion::query()
+            ->with(['question.options'])
+            ->where('exam_id', $exam->id)
+            ->take(5)
+            ->get();
+
+        foreach ($examQuestions as $examQuestion) {
+            $question = $examQuestion->question;
+            if (! $question instanceof Question || $question->options->isEmpty()) {
+                continue;
+            }
+
+            $selectedOption = $question->options->random();
+
+            StudentAnswer::query()->create([
+                'exam_attempt_id' => $attempt->id,
+                'question_id' => $question->id,
+                'selected_option_id' => $selectedOption->id,
+                'is_correct' => $selectedOption->is_correct,
+                'marks_awarded' => $selectedOption->is_correct ? (float) $question->marks : 0,
+            ]);
         }
     }
 }
