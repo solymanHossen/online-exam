@@ -1,10 +1,12 @@
-import DangerButton from '@/Components/shared/DangerButton';
 import InputError from '@/Components/forms/InputError';
-import InputLabel from '@/Components/forms/InputLabel';
 import Modal from '@/Components/shared/Modal';
-import SecondaryButton from '@/Components/shared/SecondaryButton';
-import TextInput from '@/Components/forms/TextInput';
+import { Button } from '@/Components/ui/Button';
+import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/Components/ui/Dialog';
+import { Input } from '@/Components/ui/Input';
+import { Label } from '@/Components/ui/Label';
+import { useTranslation } from '@/hooks/useTranslation';
 import { useForm } from '@inertiajs/react';
+import { AlertTriangle } from 'lucide-react';
 import { FormEventHandler, useRef, useState } from 'react';
 
 export default function DeleteUserForm({
@@ -12,6 +14,7 @@ export default function DeleteUserForm({
 }: {
     className?: string;
 }) {
+    const { t } = useTranslation();
     const [confirmingUserDeletion, setConfirmingUserDeletion] = useState(false);
     const passwordInput = useRef<HTMLInputElement>(null);
 
@@ -51,44 +54,46 @@ export default function DeleteUserForm({
 
     return (
         <section className={`space-y-6 ${className}`}>
-            <header>
-                <h2 className="text-lg font-medium text-foreground">
-                    Delete Account
+            <header className="space-y-2">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                    <AlertTriangle className="h-6 w-6" aria-hidden="true" />
+                </div>
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                    {t('profile.delete.title', {}, 'Delete account')}
                 </h2>
 
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Once your account is deleted, all of its resources and data
-                    will be permanently deleted. Before deleting your account,
-                    please download any data or information that you wish to
-                    retain.
+                <p className="text-sm leading-6 text-muted-foreground">
+                    {t(
+                        'profile.delete.description',
+                        {},
+                        'This action permanently removes your account and related data. Review this carefully before continuing.',
+                    )}
                 </p>
             </header>
 
-            <DangerButton onClick={confirmUserDeletion}>
-                Delete Account
-            </DangerButton>
+            <Button variant="destructive" onClick={confirmUserDeletion} className="rounded-2xl">
+                {t('profile.delete.action', {}, 'Delete account')}
+            </Button>
 
             <Modal show={confirmingUserDeletion} onClose={closeModal}>
-                <form onSubmit={deleteUser} className="p-6">
-                    <h2 className="text-lg font-medium text-foreground">
-                        Are you sure you want to delete your account?
-                    </h2>
+                <form onSubmit={deleteUser} className="space-y-6 p-6">
+                    <DialogHeader className="space-y-2 text-left">
+                        <DialogTitle>
+                            {t('profile.delete.confirm_title', {}, 'Confirm account deletion')}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {t(
+                                'profile.delete.confirm_description',
+                                {},
+                                'Enter your password to permanently delete this account and all associated resources.',
+                            )}
+                        </DialogDescription>
+                    </DialogHeader>
 
-                    <p className="mt-1 text-sm text-muted-foreground">
-                        Once your account is deleted, all of its resources and
-                        data will be permanently deleted. Please enter your
-                        password to confirm you would like to permanently delete
-                        your account.
-                    </p>
+                    <div>
+                        <Label htmlFor="password">{t('profile.delete.password', {}, 'Password')}</Label>
 
-                    <div className="mt-6">
-                        <InputLabel
-                            htmlFor="password"
-                            value="Password"
-                            className="sr-only"
-                        />
-
-                        <TextInput
+                        <Input
                             id="password"
                             type="password"
                             name="password"
@@ -97,9 +102,9 @@ export default function DeleteUserForm({
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
-                            className="mt-1 block w-3/4"
-                            isFocused
-                            placeholder="Password"
+                            className="mt-2 h-11 rounded-2xl"
+                            autoFocus
+                            placeholder={t('profile.delete.password_placeholder', {}, 'Password')}
                         />
 
                         <InputError
@@ -108,15 +113,15 @@ export default function DeleteUserForm({
                         />
                     </div>
 
-                    <div className="mt-6 flex justify-end">
-                        <SecondaryButton onClick={closeModal}>
-                            Cancel
-                        </SecondaryButton>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button type="button" variant="outline" onClick={closeModal} className="rounded-2xl">
+                            {t('common.cancel', {}, 'Cancel')}
+                        </Button>
 
-                        <DangerButton className="ms-3" disabled={processing}>
-                            Delete Account
-                        </DangerButton>
-                    </div>
+                        <Button variant="destructive" className="rounded-2xl" disabled={processing}>
+                            {t('profile.delete.action', {}, 'Delete account')}
+                        </Button>
+                    </DialogFooter>
                 </form>
             </Modal>
         </section>
