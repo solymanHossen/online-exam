@@ -11,9 +11,9 @@ class RegisterUserService
     public function execute(array $payload): User
     {
         return DB::transaction(function () use ($payload): User {
-            $studentRoleId = Role::query()
-                ->whereRaw('LOWER(name) = ?', ['student'])
-                ->value('id');
+            $studentRoleId = Role::query()->firstOrCreate([
+                'name' => 'student',
+            ])->id;
 
             return User::create([
                 'name' => trim($payload['name']),
