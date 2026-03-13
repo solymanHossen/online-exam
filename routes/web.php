@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\StudentController as AdminStudentController;
 use App\Http\Controllers\Admin\SubjectController;
 use App\Http\Controllers\Admin\SystemUtilityController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\LocalizationController;
 use App\Http\Controllers\ProfileController;
@@ -77,9 +78,7 @@ Route::get('/', function () {
  */
 Route::middleware(['auth', 'verified'])->group(function () {
     // Main dashboard entry point
-    Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Profile management grouped securely via the ProfileController
     Route::controller(ProfileController::class)->group(function () {

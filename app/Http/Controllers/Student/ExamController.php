@@ -7,10 +7,11 @@ use App\Http\Resources\ExamAttemptResource;
 use App\Http\Resources\ExamResource;
 use App\Models\Exam;
 use App\Models\ExamAttempt;
-use App\Repositories\ExamRepository;
+use App\Models\Student;
+use App\Repositories\Interfaces\ExamRepositoryInterface;
 use App\Services\ExamService;
 use App\Traits\ResponseTrait;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,9 +22,9 @@ class ExamController extends Controller
 
     protected ExamService $examService;
 
-    protected ExamRepository $examRepository;
+    protected ExamRepositoryInterface $examRepository;
 
-    public function __construct(ExamService $examService, ExamRepository $examRepository)
+    public function __construct(ExamService $examService, ExamRepositoryInterface $examRepository)
     {
         $this->examService = $examService;
         $this->examRepository = $examRepository;
@@ -34,7 +35,11 @@ class ExamController extends Controller
         Gate::authorize('viewAny', Exam::class);
 
         // Fetch active exams for the student's batch via repository
-        $exams = $this->examRepository->getActiveExamsPaginated(15);
+        $student = Student::query()
+            ->where('user_id', Auth::id())
+            ->first();
+
+        $exams = $this->examRepository->getActiveExamsPaginated(15, $student?->batch_id);
 
         return Inertia::render('Student/ExamsList', [
             'exams' => ExamResource::collection($exams),
@@ -52,7 +57,7 @@ class ExamController extends Controller
         $optimizedExam = $this->examRepository->getExamWithQuestions($exam->id);
 
         $attempt = ExamAttempt::firstOrCreate(
-            ['exam_id' => $exam->id, 'user_id' => auth()->id(), 'is_completed' => false],
+            ['exam_id' => $exam->id, 'user_id' => Auth::id(), 'is_completed' => false],
             [
                 'start_time' => now(),
                 'end_time' => now()->addMinutes($exam->duration_minutes),

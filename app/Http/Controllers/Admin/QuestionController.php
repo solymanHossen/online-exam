@@ -12,6 +12,7 @@ use App\Models\Subject;
 use App\Services\QuestionService;
 use App\Traits\ResponseTrait;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -103,7 +104,7 @@ class QuestionController extends Controller
             'difficulty' => $validated['difficulty'],
             'marks' => $validated['marks'],
             'negative_marks' => $validated['negative_marks'],
-            'created_by' => auth()->id(),
+            'created_by' => Auth::id(),
             'is_active' => true,
         ];
 

@@ -18,6 +18,23 @@ class ExamRepository extends BaseRepository implements ExamRepositoryInterface
         return $this->model->with(['batch', 'creator'])->latest()->paginate($perPage);
     }
 
+    public function getActiveExamsPaginated(int $perPage = 15, ?string $batchId = null): LengthAwarePaginator
+    {
+        return $this->model
+            ->with(['batch', 'creator'])
+            ->active()
+            ->when(
+                $batchId,
+                fn ($query) => $query->where(function ($visibilityQuery) use ($batchId) {
+                    $visibilityQuery->where('batch_id', $batchId)
+                        ->orWhereNull('batch_id');
+                }),
+                fn ($query) => $query->whereNull('batch_id')
+            )
+            ->orderBy('start_time')
+            ->paginate($perPage);
+    }
+
     /**
      * Eager load the Exam with its questions and options in a single optimized query.
      */

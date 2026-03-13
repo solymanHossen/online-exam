@@ -10,6 +10,7 @@ use App\Models\Student;
 use App\Models\StudentAnswer;
 use App\Models\SubjectPerformance;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -18,7 +19,7 @@ class AnalyticsController extends Controller
 {
     public function index(): Response
     {
-        $user = auth()->user();
+        $user = Auth::user();
         abort_unless($user, 403);
 
         $student = Student::query()
