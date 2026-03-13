@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mysql:
     image: 'mysql:8.0'
@@ -42,6 +40,24 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+    networks:
+      - online_exam_network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: online_exam_phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: '${DB_PASSWORD}'
+      MYSQL_ROOT_PASSWORD: '${DB_PASSWORD}'
+    ports:
+      - "8080:80"
     networks:
       - online_exam_network
 
