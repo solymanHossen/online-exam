@@ -20,7 +20,6 @@ use App\Http\Controllers\Student\AttemptController;
 use App\Http\Controllers\Student\ExamController as StudentExamController;
 use App\Http\Controllers\Student\PaymentController as StudentPaymentController;
 // Student Controllers
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -66,11 +65,9 @@ Route::middleware('is-installed')->prefix('install')->name('install.')->controll
  * Returns the Welcome view with current framework versions if not authenticated.
  */
 Route::get('/', function () {
-    return Inertia::render('Welcome', [
+    return Inertia::render('Frontend/Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
     ]);
 });
 
