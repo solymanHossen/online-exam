@@ -52,6 +52,19 @@ npm run build
 php artisan test
 ```
 
+## 🧰 Local Development Ports
+- This project is pinned to dedicated ports to avoid conflicts with other Laravel/Vite projects.
+- Backend (Laravel): `APP_PORT=8088`
+- Frontend (Vite): `VITE_PORT=5188`
+- Start both with:
+
+```bash
+composer run dev
+```
+
+- Open app at: `http://127.0.0.1:8088`
+
+
 ## ✨ Key Features
 - ⚡ **Blazing Fast SPA:** No page reloads, providing a smooth app-like experience.
 - 🔒 **Highly Secure:** Advanced protection against race-conditions, IDOR, and XSS.

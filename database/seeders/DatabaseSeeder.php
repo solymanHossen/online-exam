@@ -108,7 +108,7 @@ class DatabaseSeeder extends Seeder
             return $subject;
         });
 
-        $students = collect(range(1, 12))->map(function (int $index) use ($studentRole, $batches) {
+        $students = collect(range(1, 24))->map(function (int $index) use ($studentRole, $batches) {
             $user = $this->createVerifiedUser(
                 $studentRole,
                 'Demo Student ' . $index,
@@ -135,12 +135,13 @@ class DatabaseSeeder extends Seeder
         });
 
         $questions = collect();
+        $questionsBySubject = collect();
         foreach ($subjects as $subjectIndex => $subject) {
             $chapters = Chapter::query()->where('subject_id', $subject->id)->orderBy('order')->get();
 
             foreach ($chapters as $chapterIndex => $chapter) {
-                for ($i = 1; $i <= 6; $i++) {
-                    $questionNumber = ($subjectIndex * 18) + ($chapterIndex * 6) + $i;
+                for ($i = 1; $i <= 10; $i++) {
+                    $questionNumber = ($subjectIndex * 30) + ($chapterIndex * 10) + $i;
                     $question = Question::query()->create([
                         'subject_id' => $subject->id,
                         'chapter_id' => $chapter->id,
@@ -164,48 +165,57 @@ class DatabaseSeeder extends Seeder
                     });
 
                     $questions->push($question);
+                    $questionsBySubject[$subject->id] = ($questionsBySubject[$subject->id] ?? collect())->push($question);
                 }
             }
         }
 
         $exams = collect();
+        $examQuestionsMap = [];
         foreach ($batches as $batchIndex => $batch) {
-            $batchQuestions = $questions->filter(fn (Question $question) => (int) $question->subject_id !== 0)->values();
+            $examDefinitions = collect(range(1, 10))->map(function (int $number) use ($batch) {
+                if ($number <= 4) {
+                    return [
+                        'title' => sprintf('%s Mock Test %02d', $batch->name, $number),
+                        'status' => ExamStatus::PUBLISHED,
+                        'start_time' => now()->subDays(28 - ($number * 3)),
+                        'end_time' => now()->subDays(27 - ($number * 3)),
+                        'duration_minutes' => collect([45, 60, 75])->random(),
+                        'price' => $number % 2 === 0 ? 9.99 : 0,
+                    ];
+                }
 
-            $examDefinitions = [
-                [
-                    'title' => $batch->name . ' Foundation Mock',
-                    'status' => ExamStatus::PUBLISHED,
-                    'start_time' => now()->subDays(14),
-                    'end_time' => now()->subDays(13),
+                if ($number <= 7) {
+                    return [
+                        'title' => sprintf('%s Live Assessment %02d', $batch->name, $number - 4),
+                        'status' => ExamStatus::PUBLISHED,
+                        'start_time' => now()->subHours(3 + $number),
+                        'end_time' => now()->addDays(2 + ($number - 5)),
+                        'duration_minutes' => collect([60, 75, 90])->random(),
+                        'price' => collect([0, 14.99, 19.99])->random(),
+                    ];
+                }
+
+                if ($number <= 9) {
+                    return [
+                        'title' => sprintf('%s Upcoming Exam %02d', $batch->name, $number - 7),
+                        'status' => ExamStatus::PUBLISHED,
+                        'start_time' => now()->addDays($number - 5),
+                        'end_time' => now()->addDays($number - 4),
+                        'duration_minutes' => collect([75, 90, 120])->random(),
+                        'price' => collect([14.99, 19.99, 24.99])->random(),
+                    ];
+                }
+
+                return [
+                    'title' => sprintf('%s Practice Draft %02d', $batch->name, $number - 9),
+                    'status' => ExamStatus::DRAFT,
+                    'start_time' => now()->addDays(15 + $number),
+                    'end_time' => now()->addDays(16 + $number),
                     'duration_minutes' => 60,
                     'price' => 0,
-                ],
-                [
-                    'title' => $batch->name . ' Performance Check',
-                    'status' => ExamStatus::PUBLISHED,
-                    'start_time' => now()->subDays(7),
-                    'end_time' => now()->subDays(6),
-                    'duration_minutes' => 75,
-                    'price' => 9.99,
-                ],
-                [
-                    'title' => $batch->name . ' Live Assessment',
-                    'status' => ExamStatus::PUBLISHED,
-                    'start_time' => now()->subHours(2),
-                    'end_time' => now()->addDays(2),
-                    'duration_minutes' => 90,
-                    'price' => 14.99,
-                ],
-                [
-                    'title' => $batch->name . ' Final Challenge',
-                    'status' => ExamStatus::PUBLISHED,
-                    'start_time' => now()->addDays(3),
-                    'end_time' => now()->addDays(4),
-                    'duration_minutes' => 120,
-                    'price' => 19.99,
-                ],
-            ];
+                ];
+            })->all();
 
             foreach ($examDefinitions as $definitionIndex => $definition) {
                 $exam = Exam::query()->create([
@@ -227,10 +237,10 @@ class DatabaseSeeder extends Seeder
                 ]);
 
                 $subjectIdsForBatch = $subjects->shuffle()->take(4)->pluck('id');
-                $examQuestionPool = $questions
-                    ->whereIn('subject_id', $subjectIdsForBatch)
+                $examQuestionPool = $subjectIdsForBatch
+                    ->flatMap(fn ($subjectId) => $questionsBySubject[$subjectId] ?? collect())
                     ->shuffle()
-                    ->take(20)
+                    ->take(25)
                     ->values();
 
                 foreach ($examQuestionPool as $order => $question) {
@@ -240,6 +250,8 @@ class DatabaseSeeder extends Seeder
                         'question_order' => $order + 1,
                     ]);
                 }
+
+                $examQuestionsMap[$exam->id] = $examQuestionPool->values();
 
                 $exams->push($exam);
             }
@@ -275,12 +287,13 @@ class DatabaseSeeder extends Seeder
                     && $exam->end_time->isPast();
             })->values();
 
-            foreach ($completedExams->take(2) as $completedExamIndex => $exam) {
+            foreach ($completedExams->take(4) as $completedExamIndex => $exam) {
                 $accuracy = 55 + (($index + 1) * 3) + ($completedExamIndex * 7);
                 $this->createCompletedAttempt(
                     $exam,
                     $studentUser,
                     min($accuracy, 92),
+                    $examQuestionsMap[$exam->id] ?? collect(),
                     $questionStats,
                     $subjectPerformanceAccumulator,
                 );
@@ -296,7 +309,7 @@ class DatabaseSeeder extends Seeder
                 });
 
                 if ($activeExam instanceof Exam) {
-                    $this->createInProgressAttempt($activeExam, $studentUser);
+                    $this->createInProgressAttempt($activeExam, $studentUser, $examQuestionsMap[$activeExam->id] ?? collect());
                 }
             }
 
@@ -482,6 +495,7 @@ class DatabaseSeeder extends Seeder
         Exam $exam,
         User $student,
         int $accuracy,
+        Collection $examQuestions,
         array &$questionStats,
         array &$subjectPerformanceAccumulator,
     ): void {
@@ -495,13 +509,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $score = 0.0;
-        $examQuestions = ExamQuestion::query()
-            ->with(['question.options'])
-            ->where('exam_id', $exam->id)
-            ->get();
-
-        foreach ($examQuestions as $examQuestion) {
-            $question = $examQuestion->question;
+        foreach ($examQuestions as $question) {
             if (! $question instanceof Question) {
                 continue;
             }
@@ -543,7 +551,7 @@ class DatabaseSeeder extends Seeder
         ]);
     }
 
-    private function createInProgressAttempt(Exam $exam, User $student): void
+    private function createInProgressAttempt(Exam $exam, User $student, Collection $examQuestions): void
     {
         $attempt = ExamAttempt::query()->create([
             'exam_id' => $exam->id,
@@ -554,14 +562,7 @@ class DatabaseSeeder extends Seeder
             'total_score' => 0,
         ]);
 
-        $examQuestions = ExamQuestion::query()
-            ->with(['question.options'])
-            ->where('exam_id', $exam->id)
-            ->take(5)
-            ->get();
-
-        foreach ($examQuestions as $examQuestion) {
-            $question = $examQuestion->question;
+        foreach ($examQuestions->take(5) as $question) {
             if (! $question instanceof Question || $question->options->isEmpty()) {
                 continue;
             }

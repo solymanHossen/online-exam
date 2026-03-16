@@ -16,21 +16,33 @@ class UpdateQuestionRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $options = $this->input('options', []);
+        $payload = [];
 
-        if (is_array($options)) {
-            foreach ($options as $key => $option) {
-                if (isset($option['option_text'])) {
-                    $options[$key]['option_text'] = clean($option['option_text']);
+        if ($this->has('options')) {
+            $options = $this->input('options', []);
+
+            if (is_array($options)) {
+                foreach ($options as $key => $option) {
+                    if (isset($option['option_text'])) {
+                        $options[$key]['option_text'] = clean($option['option_text']);
+                    }
                 }
             }
+
+            $payload['options'] = $options;
         }
 
-        $this->merge([
-            'question_text' => $this->has('question_text') ? clean($this->input('question_text')) : null,
-            'explanation' => $this->has('explanation') ? clean($this->input('explanation')) : null,
-            'options' => $options,
-        ]);
+        if ($this->has('question_text')) {
+            $payload['question_text'] = clean($this->input('question_text'));
+        }
+
+        if ($this->has('explanation')) {
+            $payload['explanation'] = clean($this->input('explanation'));
+        }
+
+        if ($payload !== []) {
+            $this->merge($payload);
+        }
     }
 
     /**
@@ -41,18 +53,18 @@ class UpdateQuestionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'subject_id' => 'required|uuid|exists:subjects,id',
-            'chapter_id' => 'required|uuid|exists:chapters,id',
-            'question_text' => 'required|string',
+            'subject_id' => 'sometimes|required|uuid|exists:subjects,id',
+            'chapter_id' => 'sometimes|required|uuid|exists:chapters,id',
+            'question_text' => 'sometimes|required|string',
             'question_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'existing_question_image' => 'nullable|string',
             'explanation' => 'nullable|string',
-            'difficulty' => 'required|string|in:easy,medium,hard',
-            'marks' => 'required|numeric|min:0',
-            'negative_marks' => 'required|numeric|min:0',
+            'difficulty' => 'sometimes|required|string|in:easy,medium,hard',
+            'marks' => 'sometimes|required|numeric|min:0',
+            'negative_marks' => 'sometimes|required|numeric|min:0',
             'is_active' => 'sometimes|boolean',
-            'options' => 'required|array|min:2',
-            'options.*.option_text' => 'required|string',
+            'options' => 'sometimes|required|array|min:2',
+            'options.*.option_text' => 'required_with:options|string',
             'options.*.option_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'options.*.existing_option_image' => 'nullable|string',
             'options.*.is_correct' => 'boolean',

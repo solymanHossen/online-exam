@@ -145,13 +145,13 @@ class QuestionController extends Controller
         $validated = $request->validated();
 
         $questionData = [
-            'subject_id' => $validated['subject_id'],
-            'chapter_id' => $validated['chapter_id'],
-            'question_text' => $validated['question_text'],
+            'subject_id' => $validated['subject_id'] ?? $question->subject_id,
+            'chapter_id' => $validated['chapter_id'] ?? $question->chapter_id,
+            'question_text' => $validated['question_text'] ?? $question->question_text,
             'explanation' => $validated['explanation'] ?? null,
-            'difficulty' => $validated['difficulty'],
-            'marks' => $validated['marks'],
-            'negative_marks' => $validated['negative_marks'],
+            'difficulty' => $validated['difficulty'] ?? $question->difficulty,
+            'marks' => $validated['marks'] ?? $question->marks,
+            'negative_marks' => $validated['negative_marks'] ?? $question->negative_marks,
             'is_active' => $validated['is_active'] ?? $question->is_active,
             'question_image' => $validated['existing_question_image'] ?? $question->question_image,
         ];
@@ -161,8 +161,9 @@ class QuestionController extends Controller
             $questionData['question_image'] = $path;
         }
 
-        $optionsData = [];
+        $optionsData = null;
         if (isset($validated['options']) && is_array($validated['options'])) {
+            $optionsData = [];
             $rawOptions = $request->file('options', []);
 
             foreach ($validated['options'] as $index => $option) {

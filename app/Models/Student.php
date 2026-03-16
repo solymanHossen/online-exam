@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +26,11 @@ class Student extends Model
     protected $casts = [
         'admission_date' => 'date',
     ];
+
+    public function setAdmissionDateAttribute($value): void
+    {
+        $this->attributes['admission_date'] = Carbon::parse($value)->toDateString();
+    }
 
     public function user(): BelongsTo
     {

@@ -39,13 +39,13 @@ class QuestionService extends BaseService
         }
     }
 
-    public function updateQuestion(Question $question, array $data, array $options = []): bool
+    public function updateQuestion(Question $question, array $data, ?array $options = null): bool
     {
         try {
             return DB::transaction(function () use ($question, $data, $options) {
                 $updated = $this->repository->update($question, $data);
 
-                if ($updated) {
+                if ($updated && is_array($options)) {
                     $question->options()->delete();
 
                     if (!empty($options)) {
